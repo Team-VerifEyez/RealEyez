@@ -35,3 +35,13 @@ env.bak/
 venv.bak/
 
 #Terraform
+Terraform/*/variables.auto.tfvars
+Terraform/*/.terraform
+Terraform/*/.terraform/*
+Terraform/*/.terraform.lock.hcl
+Terraform/*/terraform.tfstate
+Terraform/*/terraform.tfstate.backup
+Terraform/*/plan.tfplan
+
+#Ignore
+team5.pem
