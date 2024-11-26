@@ -65,17 +65,5 @@ The model is based on EfficientNet, a highly efficient deep learning architectur
 - Training Dataset: Custom dataset of real and AI-generated images
 - Accuracy: The model achieves an accuracy of X% on the test dataset.
 
-## Contributing
-- Fork the repository.
-- Create your feature branch (git checkout -b feature-branch).
-- Commit your changes (git commit -m 'Add new feature').
-- Push to the branch (git push origin feature-branch).
-- Open a Pull Request to merge your changes into the main branch.
-
-## Contact
-For any questions or feedback, please reach out to:
- - Name: Dnyaneshwari Pramod Nemade
- - Email: dnyaneshwarinemade02@gmail.com
-
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
