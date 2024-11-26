@@ -19,38 +19,30 @@ MODEL_PATH = os.path.join('detection', 'models', 'efficientnet_model.h5')
 model = load_model(MODEL_PATH)
 
 def predict_image(image):
-    # Open the image and ensure RGB
-    img = Image.open(image).convert("RGB")
-    
-    # Resize the image to the expected size for EfficientNet
-    img = img.resize((224, 224))
-    
-    # Convert the image to a NumPy array
+    img = Image.open(image)
+    img = img.resize((224, 224))  # Resize both width and height to 32x32
     img_array = np.array(img)
     
-    # Add batch dimension
-    img_array = np.expand_dims(img_array, axis=0)
-    
-    # Preprocess the image
-    img_array = preprocess_input(img_array)
+    # Ensure the image has 3 channels (RGB)
+    if img_array.shape[-1] != 3:
+        img_array = np.stack([img_array] * 3, axis=-1)  # Convert to 3 channels if it's grayscale
 
-    # Make predictions
+    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+    img_array = preprocess_input(img_array)  # Preprocess the image (for EfficientNet)
+
+    # Make the prediction
     prediction = model.predict(img_array)
+
+   # Assuming binary classification or two possible outcomes, find the probability
+    confidence = prediction[0][0]  # Get the confidence for the first class (or adjust based on your model)
     
-    # Determine predicted class and confidence
-    predicted_class = np.argmax(prediction, axis=1)[0]  # Class with highest confidence
-    confidence = prediction[0][predicted_class]  # Confidence for the predicted class
-
-    # Debugging and output
-    print(f'The predicted class: {predicted_class}')
-    print(f'The confidence: {confidence}')
-    print(f'Confidence for the first class (index 0): {prediction[0][0]}')
-
+    # Use the confidence to determine the label and return the result
     if confidence >= 0.5:
-        return "Real", confidence * 100  # Confidence as percentage
+        # If confidence is above the threshold, classify as "Real"
+        return "Real", confidence * 100  # Return confidence as percentage
     else:
-        return "AI-Generated", (1 - confidence) * 100
-
+        # If confidence is below the threshold, classify as "AI-Generated"
+        return "AI-Generated", (1 - confidence) * 100  # Return the inverted confidence as percentage
 
 def upload(request):
     form = ImageUploadForm()  # Always initialize 'form' to avoid the error
