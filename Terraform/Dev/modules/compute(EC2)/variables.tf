@@ -16,7 +16,6 @@ variable "public_subnet_id_2" {
 variable "private_subnet_id_1_az1" {
 }
 
-
 variable "private_subnet_id_1_az2" {
 }
 
