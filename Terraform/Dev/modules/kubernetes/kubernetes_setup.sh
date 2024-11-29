@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Create EKS cluster
-eksctl create cluster kubedemo40 --vpc-public-subnets=subnet-0c7755f1dba6358c8,subnet-0c893fcb7da57f2d1 --vpc-private-subnets=subnet-096cb6de98d7239f0,subnet-088b523a067045ade --without-nodegroup
+# # Create EKS cluster
+# eksctl create cluster kubedemo40 --vpc-public-subnets=subnet-0c7755f1dba6358c8,subnet-0c893fcb7da57f2d1 --vpc-private-subnets=subnet-096cb6de98d7239f0,subnet-088b523a067045ade --without-nodegroup
 
-# Create node group
-eksctl create nodegroup --cluster kubedemo40 --name kubedemo-ng --node-type t2.medium --nodes 2 --nodes-min 1 --nodes-max 10
+# # Create node group
+# eksctl create nodegroup --cluster kubedemo40 --name kubedemo-ng --node-type t2.medium --nodes 2 --nodes-min 1 --nodes-max 10
 
-# Wait for nodes to be ready
-kubectl wait --for=condition=ready nodes --all --timeout=300s
+# # Wait for nodes to be ready
+# kubectl wait --for=condition=ready nodes --all --timeout=300s
 
-# Associate IAM OIDC provider
-eksctl utils associate-iam-oidc-provider --region=us-east-1 --cluster=kubedemo40 --approve
+# # Associate IAM OIDC provider
+# eksctl utils associate-iam-oidc-provider --region=us-east-1 --cluster=kubedemo40 --approve
 
 # Create IAM service account
 eksctl create iamserviceaccount \
