@@ -15,7 +15,7 @@ from PIL import Image  # Correct import for handling images
 import os
 
 # Load model once during server startup
-MODEL_PATH = os.path.join('detection', 'models', 'efficientnet_model.h5')
+MODEL_PATH = os.path.join('detection', 'models', 'ai_vs_real_model.keras')
 model = load_model(MODEL_PATH)
 
 def predict_image(image):
@@ -38,13 +38,12 @@ def predict_image(image):
     prediction = model.predict(img_array)
     
     # Determine predicted class and confidence
-    predicted_class = np.argmax(prediction, axis=1)[0]  # Class with highest confidence
-    confidence = prediction[0][predicted_class]  # Confidence for the predicted class
+    # Class with highest confidence
+    confidence = prediction[0][0]  # Confidence for the predicted class
 
     # Debugging and output
-    print(f'The predicted class: {predicted_class}')
+    print(f'The Predictions: {prediction}')
     print(f'The confidence: {confidence}')
-    print(f'Confidence for the first class (index 0): {prediction[0][0]}')
     
     # Use the confidence to determine the label and return the result
     if confidence >= 0.5:
