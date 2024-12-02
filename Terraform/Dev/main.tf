@@ -15,7 +15,20 @@ module "VPC" {
   source = "./modules/network"
 }
 
-# Define the RDS module (look at the main.tf in the Prod dir for hints)
+module "RDS" {
+  source = "./modules/database"
+  vpc_id = module.VPC.vpc_id
+  private_subnet_id_2_az1 = module.VPC.private_subnet_id_2_az1
+  private_subnet_id_2_az2 = module.VPC.private_subnet_id_2_az2
+  depends_on = [module.VPC]
+}
 
-
-# Define the RDS module (look at the main.tf in the Prod dir for hints)
+module "Kubernetes" {
+  source = "./modules/kubernetes"
+  vpc_id = module.VPC.vpc_id
+  private_subnet_id_1_az1 = module.VPC.private_subnet_id_1_az1
+  private_subnet_id_1_az2 = module.VPC.private_subnet_id_1_az2
+  public_subnet_id_1 = module.VPC.public_subnet_id_1
+  public_subnet_id_2 = module.VPC.public_subnet_id_2
+  depends_on = [module.VPC]
+}

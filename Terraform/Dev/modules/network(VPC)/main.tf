@@ -21,6 +21,25 @@ resource "aws_internet_gateway" "ig" {
   }
 }
 
+# Create a VPC Peering Connection between the default VPC and the Terraform-created VPC
+resource "aws_vpc_peering_connection" "vpc_peering" {
+  vpc_id        = data.aws_vpc.default_vpc.id  # default VPC ID
+  peer_vpc_id   = aws_vpc.customvpc.id           # Accepter VPC ID which is our custom VPC
+  auto_accept   = true  # Automatically accept the peering connection
+  
+  tags = {
+    Name = "Default-to-Custom-Peering"
+  }
+
+}
+
+# Add a route to the default VPC's route table 
+resource "aws_route" "default_vpc_to_vpc" {
+  route_table_id         = var.default_route_table_id  # Route Table ID of the manual VPC
+  destination_cidr_block = "10.0.0.0/16" #Our custom VPC's cidr block
+  vpc_peering_connection_id = aws_vpc_peering_connection.vpc_peering.id
+}
+
 # Availability Zone 1: 
 # Create public subnet 1 (AZ1) 
 resource "aws_subnet" "pub_sub_az1" {
@@ -97,13 +116,15 @@ resource "aws_route_table" "pub_rt_main" {
     gateway_id = aws_internet_gateway.ig.id
   }
   route {
-    cidr_block                = data.aws_vpc.default.cidr_block
+    cidr_block                = data.aws_vpc.default_vpc.cidr_block
     vpc_peering_connection_id = aws_vpc_peering_connection.vpc_peering.id
   }
   
   tags = {
     Name = "pub_rt_main" 
   }
+
+  depends_on = [aws_vpc_peering_connection.vpc_peering]
 }
 
 # Associate the route table with both of the public subnets
@@ -141,7 +162,7 @@ resource "aws_eip" "elastic2" {
 # Create NAT Gateway for AZ1 
 resource "aws_nat_gateway" "nat1" {
   allocation_id = aws_eip.elastic1.id
-  subnet_id     = aws_subnet.pub_sub1.id 
+  subnet_id = aws_subnet.pub_sub_az1.id
 
   tags = {
     Name = "NAT_Gateway1" 
@@ -153,8 +174,8 @@ resource "aws_nat_gateway" "nat1" {
 # Create NAT Gateway for AZ2
 resource "aws_nat_gateway" "nat2" {
   allocation_id = aws_eip.elastic2.id
-  subnet_id     = aws_subnet.pub_sub2.id 
-
+  subnet_id = aws_subnet.pub_sub_az2.id
+ 
   tags = {
     Name = "NAT_Gateway2" 
   }
@@ -172,13 +193,15 @@ resource "aws_route_table" "priv_rt_az1" {
   }
 
   route {
-    cidr_block                = data.aws_vpc.default.cidr_block
+    cidr_block                = data.aws_vpc.default_vpc.cidr_block
     vpc_peering_connection_id = aws_vpc_peering_connection.vpc_peering.id 
   }
 
   tags = {
     Name = "priv_rt_az1" 
   }
+
+  depends_on = [aws_vpc_peering_connection.vpc_peering]
 }
 
 
@@ -203,13 +226,15 @@ resource "aws_route_table" "priv_rt_az2" {
   }
 
   route {
-    cidr_block                = data.aws_vpc.default.cidr_block
+    cidr_block                = data.aws_vpc.default_vpc.cidr_block
     vpc_peering_connection_id = aws_vpc_peering_connection.vpc_peering.id 
   }
 
   tags = {
     Name = "priv_rt_az2" 
   }
+
+  depends_on = [aws_vpc_peering_connection.vpc_peering]
 }
 # Associate the private route table with both private subnets in AZ2
 resource "aws_route_table_association" "pri_rt_assc1_az2" {
@@ -222,29 +247,4 @@ resource "aws_route_table_association" "pri_rt_assc2_az2" {
   route_table_id = aws_route_table.priv_rt_az2.id
 
 }
-# Create a VPC Peering Connection between the default VPC and the Terraform-created VPC
-resource "aws_vpc_peering_connection" "vpc_peering" {
-  vpc_id        = data.aws_vpc.default_vpc.id  # default VPC ID
-  peer_vpc_id   = aws_vpc.customvpc.id           # Accepter VPC ID which is our custom VPC
-  auto_accept   = true  # Automatically accept the peering connection
-}
-
-# Add a route to the default VPC's route table 
-resource "aws_route" "default_vpc_to_vpc" {
-  route_table_id         = var.default_route_table_id  # Route Table ID of the manual VPC
-  destination_cidr_block = "10.0.0.0/16" #Our custom VPC's cidr block
-  vpc_peering_connection_id = aws_vpc_peering_connection.vpc_peering.id
-}
-
-# Define the routes for the public route table
-resource "aws_route" "public_to_default" {
-  route_table_id         = aws_route_table.pub_rt_main.id  
-  destination_cidr_block = data.aws_vpc.default_vpc.cidr_block
-  vpc_peering_connection_id = aws_vpc_peering_connection.vpc_peering.id
-}
-
-# Define the routes for the first private route table it will be similar to the preceding 
-
-# Define the routes for the second private route table it will be similar to the preceding 
-
-# ^ Don't think we need this since the route table resource blocks already include the peering connection  
+ 
