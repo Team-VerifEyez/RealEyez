@@ -1,8 +1,3 @@
-provider "aws" {
-    region = "us-east-1"  
-    access_key = "#Enter account keys"
-    secret_key = "#Enter account keys"
-}
 
 # --------------------------------------------------------
 # RESOURCE 0: KUBERNETES
@@ -14,296 +9,6 @@ provider "kubernetes" {
   token = module.eks.kubeconfig["token"]
   cluster_ca_certificate = base64decode(module.eks.kubeconfig["cluster_ca_certificate"])
 }
-
-# --------------------------------------------------------
-# RESOURCE 1: VPC
-# --------------------------------------------------------
-
-resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
-}
-
-# --------------------------------------------------------
-# RESOURCE 2: INTERNET GATEWAY
-# --------------------------------------------------------
-
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.main.id
-}
-
-# --------------------------------------------------------
-# RESOURCE 3: PUBLIC SUBNET A
-# --------------------------------------------------------
-# Without proper tags, Kubernetes might fail to provision or associate the load balancer with the right subnets.
-# The controller does not interpret the value 1 differently from other non-empty values. 
-# It just checks if the tag exists and associates the subnet with ELB provisioning.
-# "kubernetes.io/role/elb" tags public subnets, meaning they can host internet-facing load balancers.
-# "kubernetes.io/role/internal-elb" tags private subnets for internal-only load balancers.
-
-resource "aws_subnet" "public_subneta" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.1.0/24"
-  map_public_ip_on_launch = true
-  availability_zone = "us-east-1a"
-
-  tags = {
-    Name = "Public Subnet A"
-    "kubernetes.io/role/elb" = 1
-  }
-}
-
-# --------------------------------------------------------
-# RESOURCE 4: PUBLIC SUBNET B
-# --------------------------------------------------------
-resource "aws_subnet" "public_subnetb" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.2.0/24"
-  map_public_ip_on_launch = true
-  availability_zone = "us-east-1b"
-
-  tags = {
-    Name = "Public Subnet B"
-    "kubernetes.io/role/elb" = 1
-  }
-}
-
-# --------------------------------------------------------
-# RESOURCE 5: PRIVATE SUBNET A1
-# --------------------------------------------------------
-resource "aws_subnet" "private_subneta1" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.3.0/24"
-  availability_zone = "us-east-1a"
-
-  tags = {
-    Name = "Private Subnet A1"
-    "kubernetes.io/role/internal-elb" = 1
-  }
-}
-
-# --------------------------------------------------------
-# RESOURCE 6: PRIVATE SUBNET A2
-# --------------------------------------------------------
-resource "aws_subnet" "private_subneta2" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.4.0/24"
-  availability_zone = "us-east-1a"
-
-  tags = {
-    Name = "Private Subnet 2A"
-    "kubernetes.io/role/internal-elb" = 1
-  }
-}
-
-# --------------------------------------------------------
-# RESOURCE 7: PRIVATE SUBNET B1
-# --------------------------------------------------------
-resource "aws_subnet" "private_subnetb1" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.5.0/24"
-  availability_zone = "us-east-1b"
-
-  tags = {
-    Name = "Private Subnet B1"
-    "kubernetes.io/role/internal-elb" = 1
-  }
-}
-
-# --------------------------------------------------------
-# RESOURCE 8: PRIVATE SUBNET B2
-# --------------------------------------------------------
-resource "aws_subnet" "private_subnetb2" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.6.0/24"
-  availability_zone = "us-east-1b"
-
-  tags = {
-    Name = "Private Subnet B1"
-    "kubernetes.io/role/internal-elb" = 1
-  }
-}
-
-# --------------------------------------------------------
-# RESOURCE 9: EIP A
-# --------------------------------------------------------
-resource "aws_eip" "nata" {
-  vpc = true
-}
-
-# --------------------------------------------------------
-# RESOURCE 10: EIP B
-# --------------------------------------------------------
-resource "aws_eip" "natb" {
-  vpc = true
-}
-
-# --------------------------------------------------------
-# RESOURCE 11: NAT GATEWAY A
-# --------------------------------------------------------
-resource "aws_nat_gateway" "natgwa" {
-  allocation_id = aws_eip.nata.id
-  subnet_id     = aws_subnet.public_subneta.id
-  depends_on    = [aws_internet_gateway.igw]
-}
-
-# --------------------------------------------------------
-# RESOURCE 12: NAT GATEWAY B
-# --------------------------------------------------------
-resource "aws_nat_gateway" "natgwb" {
-  allocation_id = aws_eip.natb.id
-  subnet_id     = aws_subnet.public_subnetb.id
-  depends_on    = [aws_internet_gateway.igw]
-}
-
-# --------------------------------------------------------
-# RESOURCE 13: PUBLIC ROUTE TABLE
-# --------------------------------------------------------
-resource "aws_route_table" "public_route_table" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
-  }
-}
-
-# --------------------------------------------------------
-# RESOURCE 14: PUBLIC RTB ASSOCIATION 1: PUBLIC SUBNET A
-# --------------------------------------------------------
-resource "aws_route_table_association" "public_rta1" {
-  subnet_id      = aws_subnet.public_subneta.id
-  route_table_id = aws_route_table.public_route_table.id
-}
-
-# --------------------------------------------------------
-# RESOURCE 15: PUBLIC RTB ASSOCIATION 2: PUBLIC SUBNET B
-# --------------------------------------------------------
-resource "aws_route_table_association" "public_rta2" {
-  subnet_id      = aws_subnet.public_subnetb.id
-  route_table_id = aws_route_table.public_route_table.id
-}
-
-# --------------------------------------------------------
-# RESOURCE 16: PRIVATE ROUTE TABLE A
-# --------------------------------------------------------
-resource "aws_route_table" "private_route_table_a" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.natgwa.id
-  }
-}
-
-# --------------------------------------------------------
-# RESOURCE 17: PRIVATE RTB A ASSOCIATION 1: PRIVATE SUBNET A1
-# --------------------------------------------------------
-resource "aws_route_table_association" "private_rtba1" {
-  subnet_id      = aws_subnet.private_subneta1.id
-  route_table_id = aws_route_table.private_route_table_a.id
-}
-
-# --------------------------------------------------------
-# RESOURCE 18: PRIVATE RTB A ASSOCIATION 2: PRIVATE SUBNET A2
-# --------------------------------------------------------
-resource "aws_route_table_association" "private_rtba2" {
-  subnet_id      = aws_subnet.private_subneta2.id
-  route_table_id = aws_route_table.private_route_table_a.id
-}
-
-# --------------------------------------------------------
-# RESOURCE 19: PRIVATE ROUTE TABLE B
-# --------------------------------------------------------
-resource "aws_route_table" "private_route_table_b" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.natgwb.id
-  }
-}
-
-# --------------------------------------------------------
-# RESOURCE 20: PRIVATE RTB B ASSOCIATION 1: PRIVATE SUBNET B1
-# --------------------------------------------------------
-resource "aws_route_table_association" "private_rtbb1" {
-  subnet_id      = aws_subnet.private_subnetb1.id
-  route_table_id = aws_route_table.private_route_table_b.id
-}
-
-# --------------------------------------------------------
-# RESOURCE 21: PRIVATE RTB A ASSOCIATION 2: PRIVATE SUBNET B2
-# --------------------------------------------------------
-resource "aws_route_table_association" "private_rtbb2" {
-  subnet_id      = aws_subnet.private_subnetb2.id
-  route_table_id = aws_route_table.private_route_table_b.id
-}
-
-
-# --------------------------------------------------------
-# RESOURCE 22: OUTPUT ALL SUBNET IDS
-# --------------------------------------------------------
-output "subnet_ids" {
-  value = [
-    aws_subnet.public_subnet1.id,
-    aws_subnet.public_subnet2.id,
-    aws_subnet.private_subneta1.id,
-    aws_subnet.private_subneta2.id,
-    aws_subnet.private_subnetb1.id,
-    aws_subnet.private_subnetb2.id,
-  ]
-}
-# Outputs subnet ids to a file using a local file resource
-# resource "local_file" "subnet_ids_file" {
-#   content = join("\n", [
-#     aws_subnet.public_subnet1.id,
-#     aws_subnet.public_subnet2.id,
-#     aws_subnet.private_subneta1.id,
-#     aws_subnet.private_subneta2.id,
-#     aws_subnet.private_subnetb1.id,
-#     aws_subnet.private_subnetb2.id,
-#   ])
-#   filename = "subnets.txt"
-# }
-
-
-# --------------------------------------------------------
-# RESOURCE 23: VPC PEERING CONNECTION: CUSTOM-TO-DEFAULT VPC
-# --------------------------------------------------------
-# Create a VPC Peering Connection between the default VPC and the Terraform-created VPC
-resource "aws_vpc_peering_connection" "vpc_peering" {
-  vpc_id        = aws_vpc.main.id  # Custom VPC ID
-  peer_vpc_id   = data.aws_vpc.default_vpc.id  # Default VPC ID (or other VPC you are peering with)
-  auto_accept   = true  # Automatically accept the peering connection
-}
-
-# --------------------------------------------------------
-# RESOURCE 24: PUBLIC ROUTE TABLE PEERING ROUTE
-# --------------------------------------------------------
-resource "aws_route" "public_to_peer" {
-  route_table_id             = aws_route_table.public_route_table.id
-  destination_cidr_block     = data.aws_vpc.default_vpc.cidr_block  # Peer VPC's CIDR block
-  vpc_peering_connection_id  = aws_vpc_peering_connection.vpc_peering.id
-}
-
-# --------------------------------------------------------
-# RESOURCE 25: PRIVATE ROUTE TABLE A PEERING ROUTE
-# --------------------------------------------------------
-resource "aws_route" "private_a_to_peer" {
-  route_table_id             = aws_route_table.private_route_table_a.id
-  destination_cidr_block     = data.aws_vpc.default_vpc.cidr_block  # Peer VPC's CIDR block
-  vpc_peering_connection_id  = aws_vpc_peering_connection.vpc_peering.id
-}
-
-# --------------------------------------------------------
-# RESOURCE 26: PRIVATE ROUTE TABLE B PEERING ROUTE
-# --------------------------------------------------------
-resource "aws_route" "private_b_to_peer" {
-  route_table_id             = aws_route_table.private_route_table_b.id
-  destination_cidr_block     = data.aws_vpc.default_vpc.cidr_block  # Peer VPC's CIDR block
-  vpc_peering_connection_id  = aws_vpc_peering_connection.vpc_peering.id
-}
-
 
 # --------------------------------------------------------
 # RESOURCE 27: EKS CLUSTER IAM ROLE
@@ -354,12 +59,10 @@ resource "aws_eks_cluster" "realeyez" {
     # The subnet_ids attribute includes both public and private subnet IDs.
     # These subnets are linked to the VPC created earlier.
     subnet_ids = [
-      aws_subnet.public_subnet1.id,
-      aws_subnet.public_subnet2.id,
-      aws_subnet.private_subneta1.id,
-      aws_subnet.private_subneta2.id,
-      aws_subnet.private_subnetb1.id,
-      aws_subnet.private_subnetb2.id,
+      var.public_subnet_id_1,
+      var.public_subnet_id_2,
+      var.private_subnet_id_1_az1,
+      var.private_subnet_id_1_az2,
     ]
   }
 
@@ -500,8 +203,8 @@ resource "aws_eks_node_group" "node_group" {
   # node_group_security_groups = [aws_security_group.eks_worker_sg.id]
 
   subnet_ids = [
-    aws_subnet.public_subneta.id,
-    aws_subnet.public_subnetb.id,
+    var.public_subnet_id_1,
+    var.public_subnet_id_2,
   ]
 
   scaling_config {
@@ -562,11 +265,11 @@ resource "aws_iam_role" "aws_load_balancer_controller_role" {
         Action    = "sts:AssumeRoleWithWebIdentity"
         Effect    = "Allow"
         Principal = {
-          Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/oidc.eks.${data.aws_region.current.name}.amazonaws.com/id/${aws_eks_cluster.realeyez.id}"
+          Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/oidc.eks.${var.region}.amazonaws.com/id/${aws_eks_cluster.realeyez.id}"
         }
         Condition = {
           StringEquals = {
-            "oidc.eks.${data.aws_region.current.name}.amazonaws.com/id/${aws_eks_cluster.realeyez.id}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
+            "oidc.eks.${var.region}.amazonaws.com/id/${aws_eks_cluster.realeyez.id}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
           }
         }
       },
@@ -774,8 +477,8 @@ resource "helm_release" "aws_load_balancer_controller" {
       create: false
       name: "aws-load-balancer-controller"  # Use the created service account name
     clusterName: "${aws_eks_cluster.realeyez.name}"
-    region: "${data.aws_region.current.name}"
-    vpcId: "${aws_vpc.main.id}"
+    region: "${var.region}"
+    vpcId: "${var.vpc_id}"
     EOF
   ]
 
