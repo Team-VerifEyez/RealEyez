@@ -18,3 +18,25 @@ variable "private_subnet_id_1_az1" {
 
 variable "private_subnet_id_1_az2" {
 }
+
+
+variable "rds_instance_id" {
+  description = "The ID of the RDS instance"
+  type        = string
+}
+
+variable "rds_security_group_id" {
+  description = "The security group ID of the RDS instance"
+  type        = string
+}
+
+variable "db_username" {
+  description = "The username for the PostgreSQL database"
+  type        = string
+}
+
+variable "rds_endpoint" {
+}
+
+variable "bastion_sg_id" {
+}

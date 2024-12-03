@@ -29,3 +29,13 @@ variable "private_subnet_id_2_az1" {
 
 variable "private_subnet_id_2_az2" {
 }
+
+variable "private_subnet_cidr_az1" {
+  description = "CIDR block for private subnet in AZ1"
+  type        = string
+}
+
+variable "private_subnet_cidr_az2" {
+  description = "CIDR block for private subnet in AZ2"
+  type        = string
+}
