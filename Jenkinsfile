@@ -66,8 +66,7 @@ pipeline {
                             --network="host" \
                             ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
                             -t http://localhost:8000 \
-                            -J /zap/wrk/zap_scan_results.json \
-                            -r /zap/wrk/zap_scan_report.html \
+                            -J zap_scan_results.json \
                             -m 10 \
                             --auto
                     """
@@ -80,7 +79,9 @@ pipeline {
                     
                     if (highAlerts) {
                         error "High risk security vulnerabilities found in dynamic analysis"
-                    }
+                    } else { 
+			echo "No High risk security vulnerabilities found in dnamic analysis"
+		    }
                     
                     // Remove only the ZAP image
                     sh "docker rmi ghcr.io/zaproxy/zaproxy:stable"
