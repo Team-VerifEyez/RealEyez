@@ -16,14 +16,16 @@ pipeline {
                 echo 'This pipeline is running on the main branch.'
             }
         }
+        
         stage('Clean Up Disk Space') {
             steps {
                 echo 'Cleaning up unused Docker resources to free up space...'
                 sh '''
-                docker system prune -af || true
+                    docker system prune -af || true
                 '''
             }
         }
+        
         stage('Pull Image') {
             when {
                 branch 'main'
@@ -33,6 +35,7 @@ pipeline {
                 sh 'docker pull joedhub/realeyez:1.0'
             }
         }
+        
         stage('Run Docker Container') {
             when {
                 branch 'main'
@@ -40,9 +43,9 @@ pipeline {
             steps {
                 echo 'Running the Docker container...'
                 sh '''
-                docker stop realeyez || true
-                docker rm realeyez || true
-                docker run -d --name realeyez -p 8000:8000 joedhub/realeyez:1.0
+                    docker stop realeyez || true
+                    docker rm realeyez || true
+                    docker run -d --name realeyez -p 8000:8000 joedhub/realeyez:1.0
                 '''
             }
         }
@@ -77,18 +80,18 @@ pipeline {
                         site.alerts.findAll { alert -> alert.riskcode >= 3 }
                     }
                    
-		   // Log the ZAP scan outcome based on the exit code
-		   if (zapStatus == 0) {
-    			echo "ZAP scan completed successfully with no issues."
-		   } else if (zapStatus == 2) {
-    		      if (highAlerts.isEmpty()) {
-        		echo "ZAP scan completed with warnings. But no High-Risk Security Vulnerabilities found. Proceeding with pipeline."
-    		    } else {
-        		echo "ZAP scan completed with warnings and high-risk vulnerabilities detected. Proceeding with caution."
-    				}
-			} else if (zapStatus >= 3) {
-    			echo "ZAP scan encountered a critical issue (Exit Code: ${zapStatus}). Proceeding anyway." 
-		    }
+                    // Log the ZAP scan outcome based on the exit code
+                    if (zapStatus == 0) {
+                        echo "ZAP scan completed successfully with no issues."
+                    } else if (zapStatus == 2) {
+                        if (highAlerts.isEmpty()) {
+                            echo "ZAP scan completed with warnings. But no High-Risk Security Vulnerabilities found. Proceeding with pipeline."
+                        } else {
+                            echo "ZAP scan completed with warnings and high-risk vulnerabilities detected. Proceeding with caution."
+                        }
+                    } else if (zapStatus >= 3) {
+                        echo "ZAP scan encountered a critical issue (Exit Code: ${zapStatus}). Proceeding anyway."
+                    }
                     
                     // Remove only the ZAP image
                     sh "docker rmi ghcr.io/zaproxy/zaproxy:stable"
