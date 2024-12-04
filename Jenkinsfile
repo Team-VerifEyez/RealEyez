@@ -13,6 +13,15 @@ pipeline {
             }
         }
 
+        stage('Clean Up Disk Space') {
+            steps {
+                echo 'Cleaning up unused Docker resources to free up space...'
+                sh '''
+                docker system prune -af || true
+                '''
+            }
+        }
+
         stage('Pull Image') {
             when {
                 branch 'main' // Ensures this stage only runs for the main branch
