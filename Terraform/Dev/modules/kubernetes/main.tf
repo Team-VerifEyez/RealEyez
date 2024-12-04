@@ -10,9 +10,9 @@ provider "aws" {
 provider "kubernetes" {
   config_path = "~/.kube/config" # Path to kubeconfig file
   config_context = "my-cluster" # Context name (optional)
-  host = module.eks.cluster_endpoint
-  token = module.eks.kubeconfig["token"]
-  cluster_ca_certificate = base64decode(module.eks.kubeconfig["cluster_ca_certificate"])
+  host = aws_eks_cluster.realeyez.endpoint
+  token = data.aws_eks_cluster_auth.realeyez.token
+  cluster_ca_certificate = base64decode(aws_eks_cluster.realeyez.certificate_authority[0].data)
 }
 
 # --------------------------------------------------------
@@ -245,8 +245,8 @@ resource "aws_route_table_association" "private_rtbb2" {
 # --------------------------------------------------------
 output "subnet_ids" {
   value = [
-    aws_subnet.public_subnet1.id,
-    aws_subnet.public_subnet2.id,
+    aws_subnet.public_subneta.id,
+    aws_subnet.public_subnetb.id,
     aws_subnet.private_subneta1.id,
     aws_subnet.private_subneta2.id,
     aws_subnet.private_subnetb1.id,
@@ -270,6 +270,10 @@ output "subnet_ids" {
 # --------------------------------------------------------
 # RESOURCE 23: VPC PEERING CONNECTION: CUSTOM-TO-DEFAULT VPC
 # --------------------------------------------------------
+# Reference the Default VPC
+data "aws_vpc" "default_vpc" {
+  id = data.default_vpc_id
+}
 # Create a VPC Peering Connection between the default VPC and the Terraform-created VPC
 resource "aws_vpc_peering_connection" "vpc_peering" {
   vpc_id        = aws_vpc.main.id  # Custom VPC ID
@@ -354,8 +358,8 @@ resource "aws_eks_cluster" "realeyez" {
     # The subnet_ids attribute includes both public and private subnet IDs.
     # These subnets are linked to the VPC created earlier.
     subnet_ids = [
-      aws_subnet.public_subnet1.id,
-      aws_subnet.public_subnet2.id,
+      aws_subnet.public_subneta.id,
+      aws_subnet.public_subnetb.id,
       aws_subnet.private_subneta1.id,
       aws_subnet.private_subneta2.id,
       aws_subnet.private_subnetb1.id,
@@ -372,6 +376,23 @@ resource "aws_eks_cluster" "realeyez" {
     Team        = "Verifeye"
   }
 }
+output "cluster_endpoint" {
+  value = aws_eks_cluster.realeyez.endpoint
+}
+
+data "aws_eks_cluster_auth" "realeyez" {
+  name = aws_eks_cluster.realeyez.name
+}
+
+output "cluster_token" {
+  value = aws_eks_cluster.realeyez.identity[0].oidc.issuer
+}
+
+output "cluster_ca_certificate" {
+  value = aws_eks_cluster.realeyez.certificate_authority[0].data
+}
+
+
 
 # --------------------------------------------------------
 # RESOURCE 30: EKS NODE ROLE
@@ -407,13 +428,24 @@ resource "aws_iam_role_policy_attachment" "eks_worker_node_policy" {
 # Create the OIDC provider and associate it with the EKS cluster.
 # The OIDC provider is necessary for IAM roles for service accounts (IRSA) in EKS. 
 # It allows EKS to authenticate Kubernetes service accounts with IAM roles, enabling the Kubernetes workloads to assume IAM roles and access AWS resources securely.
-resource "aws_eks_identity_provider_config" "oidc" {
-  cluster_name = aws_eks_cluster.realeyez.name
-  provider    = "OIDC"
-  oidc {
-    issuer_url = aws_eks_cluster.realeyez.identity[0].oidc.issuer
+resource "aws_iam_openid_connect_provider" "realeyez_oidc" {
+  url = aws_eks_cluster.realeyez.identity[0].oidc.issuer
+
+  client_id_list = [
+    "sts.amazonaws.com"
+  ]
+
+  thumbprint_list = [
+    # Use the thumbprint for the OIDC provider. Retrieve this from the AWS documentation or using tools.
+    "9e99a48a9960a6a3561e0e8f0ed33c65e3780c1d"
+  ]
+
+  tags = {
+    Environment = "test"
+    Team        = "Verifeye"
   }
 }
+
 
 # --------------------------------------------------------
 # RESOURCE 33: KUBERNETES SERVICE ACCOUNT
@@ -810,8 +842,8 @@ resource "null_resource" "wait_for_lb_controller" {
 # This resource waits for the certificate to be issued by Cert-Manager and ensures that the ALB is configured with a valid certificate for secure traffic.
 resource "null_resource" "wait_for_certificate" {
   depends_on = [
-    kubernetes_manifest.letsencrypt_cluster_issuer,  # Make sure Cert-Manager and the Issuer are created first
-    kubernetes_manifest.example_ingress             # Ensure the ingress is created after certificate is ready
+    kubernetes_manifest.selfsigned_cluster_issuer,  # Make sure Cert-Manager and the Issuer are created first
+    kubernetes_manifest.realeyez_ingress             # Ensure the ingress is created after certificate is ready
   ]
 
   provisioner "local-exec" {
@@ -823,46 +855,93 @@ resource "null_resource" "wait_for_certificate" {
 }
 
 
-# --------------------------------------------------------
-# RESOURCE 45: DEFINE CERTIFICATE REQUESTS INGRESS
-# --------------------------------------------------------
-# Purpose: Defines an Ingress resource to expose a service to external traffic. The Ingress uses the AWS Load Balancer Controller and manages SSL/TLS encryption (either with a Let's Encrypt certificate or a self-signed certificate).
-# Rationale: The Ingress resource depends on the certificate being ready (as well as the AWS Load Balancer Controller). 
-# It is defined last because it references the certificate (whether from Let's Encrypt or self-signed), and requires the ALB to be ready to manage the traffic.
-resource "kubernetes_manifest" "example_ingress" {
+# # --------------------------------------------------------
+# # RESOURCE 45: DEFINE CERTIFICATE REQUESTS INGRESS
+# # --------------------------------------------------------
+# # Purpose: Defines an Ingress resource to expose a service to external traffic. The Ingress uses the AWS Load Balancer Controller and manages SSL/TLS encryption (either with a Let's Encrypt certificate or a self-signed certificate).
+# # Rationale: The Ingress resource depends on the certificate being ready (as well as the AWS Load Balancer Controller). 
+# # It is defined last because it references the certificate (whether from Let's Encrypt or self-signed), and requires the ALB to be ready to manage the traffic.
+# resource "kubernetes_manifest" "example_ingress" {
+#   manifest = {
+#     apiVersion = "networking.k8s.io/v1"
+#     kind       = "Ingress"
+#     metadata = {
+#       name      = "example-ingress"
+#       namespace = "default"
+#       annotations = {
+#         kubernetes.io/ingress.class: "alb"               # Specifies AWS Load Balancer Controller
+#         alb.ingress.kubernetes.io/scheme: "internet-facing" # ALB configuration (adjust as needed)
+#         alb.ingress.kubernetes.io/target-type: "ip"        # Target type (ip or instance)
+#         # cert-manager.io/cluster-issuer: "letsencrypt-prod" # For Cert-Manager to manage TLS
+#         cert-manager.io/issuer: "selfsigned-prod" # Reference self-signed issuer
+#       }
+#     }
+#     spec = {
+#       rules = [
+#         {
+#           host = "localhost"  # Replace with your actual domain. You can use this for testing purposes but note that Let's Encrypt won’t issue a certificate for this placeholder domain. For real-world usage, you must use a proper, valid, publicly accessible domain.
+#           # --------------------------------------------------------
+#           # ROADBLOCK 1: DOMAIN FOR INGRESS REQUESTS
+#           # --------------------------------------------------------
+#           # Without a domain, you can't request a valid TLS certificate from Let's Encrypt.
+#           # To proceed, you should either buy a domain, use a subdomain from a DNS provider, or use a free service for testing.
+#           # After getting a domain, ensure your DNS is configured to point to your ingress controller, and update your Ingress resources to use the new domain for SSL certificate requests.
+#           # If you're using a cloud provider like AWS, Azure, or GCP, you will need to expose the ingress controller via a LoadBalancer service, which will provide an external IP address.
+#           # --------------------------------------------------------
+#           # WORKAROUND 1: SELF-SIGNED ISSUER
+#           # --------------------------------------------------------
+#           # If You're Testing Without a Domain:  
+#           # cert-manager.io/issuer: "selfsigned-prod" # Reference self-signed issuer
+#           # If you're testing locally or in a development environment without a publicly accessible domain, the self-signed issuer can be useful. In this case:
+#           # Update your ingress resource to reference aws-load-balancer-selfsigned-issuer instead of letsencrypt-prod.
+#           # Use the self-signed certificate for internal testing.
+#           http = {
+#             paths = [
+#               {
+#                 path = "/"
+#                 pathType = "Prefix"
+#                 backend = {
+#                   service = {
+#                     name = "your-service"
+#                     port = {
+#                       number = 80
+#                     }
+#                   }
+#                 }
+#               }
+#             ]
+#           }
+#         }
+#       ]
+#       tls = [
+#         {
+#           hosts      = ["localhost"]  # The domain for which the certificate is requested. Replace with your actual domain.
+#           secretName = "realeye-app-tls"  # Secret to store the certificate
+#         }
+#       ]
+#     }
+#   }
+# }
+
+resource "kubernetes_manifest" "realeyez_ingress" {
   manifest = {
     apiVersion = "networking.k8s.io/v1"
     kind       = "Ingress"
     metadata = {
-      name      = "example-ingress"
+      name      = "realeyez_ingress"
       namespace = "default"
       annotations = {
-        kubernetes.io/ingress.class: "alb"               # Specifies AWS Load Balancer Controller
-        alb.ingress.kubernetes.io/scheme: "internet-facing" # ALB configuration (adjust as needed)
-        alb.ingress.kubernetes.io/target-type: "ip"        # Target type (ip or instance)
-        # cert-manager.io/cluster-issuer: "letsencrypt-prod" # For Cert-Manager to manage TLS
-        cert-manager.io/issuer: "selfsigned-prod" # Reference self-signed issuer
+        kubernetes.io/ingress.class: "alb"                        # Matches ingress_class2.yml
+        alb.ingress.kubernetes.io/scheme: "internet-facing"
+        alb.ingress.kubernetes.io/target-type: "instance"         # Match the target type from ingress2.yml
+        alb.ingress.kubernetes.io/tags: "Environment=staging"    # Optional tags for ALB
+        cert-manager.io/issuer: "selfsigned-cluster-issuer"      # Keep for testing; replace for production
       }
     }
     spec = {
       rules = [
         {
-          host = "localhost"  # Replace with your actual domain. You can use this for testing purposes but note that Let's Encrypt won’t issue a certificate for this placeholder domain. For real-world usage, you must use a proper, valid, publicly accessible domain.
-          # --------------------------------------------------------
-          # ROADBLOCK 1: DOMAIN FOR INGRESS REQUESTS
-          # --------------------------------------------------------
-          # Without a domain, you can't request a valid TLS certificate from Let's Encrypt.
-          # To proceed, you should either buy a domain, use a subdomain from a DNS provider, or use a free service for testing.
-          # After getting a domain, ensure your DNS is configured to point to your ingress controller, and update your Ingress resources to use the new domain for SSL certificate requests.
-          # If you're using a cloud provider like AWS, Azure, or GCP, you will need to expose the ingress controller via a LoadBalancer service, which will provide an external IP address.
-          # --------------------------------------------------------
-          # WORKAROUND 1: SELF-SIGNED ISSUER
-          # --------------------------------------------------------
-          # If You're Testing Without a Domain:  
-          # cert-manager.io/issuer: "selfsigned-prod" # Reference self-signed issuer
-          # If you're testing locally or in a development environment without a publicly accessible domain, the self-signed issuer can be useful. In this case:
-          # Update your ingress resource to reference aws-load-balancer-selfsigned-issuer instead of letsencrypt-prod.
-          # Use the self-signed certificate for internal testing.
+          host = "localhost"  # Replace with a valid domain for production
           http = {
             paths = [
               {
@@ -870,7 +949,7 @@ resource "kubernetes_manifest" "example_ingress" {
                 pathType = "Prefix"
                 backend = {
                   service = {
-                    name = "your-service"
+                    name = "realeyez-service"  # Replace with your actual service name
                     port = {
                       number = 80
                     }
@@ -883,8 +962,8 @@ resource "kubernetes_manifest" "example_ingress" {
       ]
       tls = [
         {
-          hosts      = ["localhost"]  # The domain for which the certificate is requested. Replace with your actual domain.
-          secretName = "realeye-app-tls"  # Secret to store the certificate
+          hosts      = ["localhost"]  # Replace with your actual domain for HTTPS
+          secretName = "realeye-app-tls"
         }
       ]
     }
@@ -892,60 +971,127 @@ resource "kubernetes_manifest" "example_ingress" {
 }
 
 
-# --------------------------------------------------------
-# RESOURCE : NGINX DEPLOYMENT
-# --------------------------------------------------------
-resource "kubernetes_deployment" "nginx" {
-  metadata {
-    name = "nginx-deployment"
-    labels = {
-      app = "nginx"
+
+resource "kubernetes_manifest" "realeyez_service" {
+  manifest = {
+    apiVersion = "v1"
+    kind       = "Service"
+    metadata = {
+      name      = "realeyez-service"
+      namespace = "default"
+    }
+    spec = {
+      selector = {
+        app = "realeyez"
+      }
+      ports = [
+        {
+          port       = 80
+          targetPort = 8000
+        }
+      ]
+      type = "ClusterIP"  # or "NodePort", "LoadBalancer" depending on your setup
     }
   }
+}
 
-  spec {
-    replicas = 3
 
-    selector {
-      match_labels = {
-        app = "nginx"
-      }
+resource "kubernetes_manifest" "realeyez_deployment" {
+  depends_on = [kubernetes_manifest.example_ingress]  # Ensure the ingress is created first
+
+  manifest = {
+    apiVersion = "apps/v1"
+    kind       = "Deployment"
+    metadata = {
+      name      = "realeyez"
+      namespace = "default"
     }
-
-    template {
-      metadata {
-        labels = {
-          app = "nginx"
+    spec = {
+      replicas = 2
+      selector = {
+        matchLabels = {
+          app = "realeyez"
         }
       }
-
-      spec {
-        container {
-          image = "nginx:1.21.1"
-          name  = "nginx"
-
-          port {
-            container_port = 80
-          }
-
-          volume_mount {
-            mount_path = "/etc/nginx/nginx.conf"
-            name       = "nginx-config"
-            sub_path   = "nginx.conf"
+      template = {
+        metadata = {
+          labels = {
+            app = "realeyez"
           }
         }
-
-        volume {
-          name = "nginx-config"
-
-          config_map {
-            name = "nginx-config"
-          }
+        spec = {
+          containers = [
+            {
+              name  = "realeyez"
+              image = "joedhub/realeyez"
+              ports = [
+                {
+                  containerPort = 8000
+                }
+              ]
+            }
+          ]
         }
       }
     }
   }
 }
+
+
+# # --------------------------------------------------------
+# # RESOURCE : NGINX DEPLOYMENT
+# # --------------------------------------------------------
+# resource "kubernetes_deployment" "nginx" {
+#   metadata {
+#     name = "nginx-deployment"
+#     labels = {
+#       app = "nginx"
+#     }
+#   }
+
+#   spec {
+#     replicas = 3
+
+#     selector {
+#       match_labels = {
+#         app = "nginx"
+#       }
+#     }
+
+#     template {
+#       metadata {
+#         labels = {
+#           app = "nginx"
+#         }
+#       }
+
+#       spec {
+#         container {
+#           image = "nginx:1.21.1"
+#           name  = "nginx"
+
+#           port {
+#             container_port = 80
+#           }
+
+#           volume_mount {
+#             mount_path = "/etc/nginx/nginx.conf"
+#             name       = "nginx-config"
+#             sub_path   = "nginx.conf"
+#           }
+#         }
+
+#         volume {
+#           name = "nginx-config"
+
+#           config_map {
+#             name = "nginx-config"
+#           }
+#         }
+#       }
+#     }
+#   }
+# }
 
 
 
