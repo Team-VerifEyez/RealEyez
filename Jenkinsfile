@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'build-node' }
 
     stages {
         stage('Check Branch') {
