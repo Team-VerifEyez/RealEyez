@@ -382,3 +382,117 @@ resource "null_resource" "wait_for_certificate" {
 # resource "kubernetes_service" "example_service" {}
 
 # resource "kubernetes_manifest" "example_ingress" {} 
+
+resource "kubernetes_manifest" "realeyez_ingress" {
+  manifest = {
+    apiVersion = "networking.k8s.io/v1"
+    kind       = "Ingress"
+    metadata = {
+      name      = "example-ingress"
+      namespace = "default"
+      annotations = {
+        kubernetes.io/ingress.class: "alb"                        # Matches ingress_class2.yml
+        alb.ingress.kubernetes.io/scheme: "internet-facing"
+        alb.ingress.kubernetes.io/target-type: "instance"         # Match the target type from ingress2.yml
+        alb.ingress.kubernetes.io/tags: "Environment=staging"    # Optional tags for ALB
+        cert-manager.io/issuer: "selfsigned-cluster-issuer"      # Keep for testing; replace for production
+      }
+    }
+    spec = {
+      rules = [
+        {
+          host = "localhost"  # Replace with a valid domain for production
+          http = {
+            paths = [
+              {
+                path = "/"
+                pathType = "Prefix"
+                backend = {
+                  service = {
+                    name = "realeyez-service"  # Replace with your actual service name
+                    port = {
+                      number = 80
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+      tls = [
+        {
+          hosts      = ["localhost"]  # Replace with your actual domain for HTTPS
+          secretName = "realeye-app-tls"
+        }
+      ]
+    }
+  }
+}
+
+
+
+resource "kubernetes_manifest" "realeyez_service" {
+  manifest = {
+    apiVersion = "v1"
+    kind       = "Service"
+    metadata = {
+      name      = "realeyez-service"
+      namespace = "default"
+    }
+    spec = {
+      selector = {
+        app = "realeyez"
+      }
+      ports = [
+        {
+          port       = 80
+          targetPort = 8000
+        }
+      ]
+      type = "ClusterIP"  # or "NodePort", "LoadBalancer" depending on your setup
+    }
+  }
+}
+
+
+resource "kubernetes_manifest" "realeyez_deployment" {
+  depends_on = [kubernetes_manifest.example_ingress]  # Ensure the ingress is created first
+
+  manifest = {
+    apiVersion = "apps/v1"
+    kind       = "Deployment"
+    metadata = {
+      name      = "realeyez"
+      namespace = "default"
+    }
+    spec = {
+      replicas = 2
+      selector = {
+        matchLabels = {
+          app = "realeyez"
+        }
+      }
+      template = {
+        metadata = {
+          labels = {
+            app = "realeyez"
+          }
+        }
+        spec = {
+          containers = [
+            {
+              name  = "realeyez"
+              image = "joedhub/realeyez"
+              ports = [
+                {
+                  containerPort = 8000
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}
