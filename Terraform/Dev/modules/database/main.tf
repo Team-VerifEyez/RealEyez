@@ -79,11 +79,11 @@ output "rds_endpoint" {
 }
 
 output "rds_instance_id" {
-  value = module.rds.rds_instance_id
+  value = aws_db_instance.postgres_db.id
 }
 
 output "rds_security_group_id" {
-  value = module.rds.rds_security_group_id
+  value = aws_security_group.sg_for_rds.id
 }
 
 output "db_username" {

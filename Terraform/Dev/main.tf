@@ -25,6 +25,14 @@ module "RDS" {
   depends_on = [module.VPC]
 }
 
+module "Compute" {
+  source = "./modules/compute"
+  vpc_id = module.VPC.vpc_id
+  public_subnet_id_1 = module.VPC.public_subnet_id_1
+  public_subnet_id_2 = module.VPC.public_subnet_id_2
+  depends_on = [module.RDS]
+}
+
 module "Kubernetes" {
   source = "./modules/kubernetes"
   vpc_id = module.VPC.vpc_id
@@ -36,6 +44,6 @@ module "Kubernetes" {
   rds_security_group_id = module.RDS.rds_security_group_id
   db_username = module.RDS.db_username
   rds_endpoint = module.RDS.rds_endpoint
-  bastion_sg_id = ""
-  depends_on = [module.VPC]
+  bastion_sg_id = module.Compute.bastion_secuirty_group_id
+  depends_on = [module.Compute]
 }

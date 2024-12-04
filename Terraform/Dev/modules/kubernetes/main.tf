@@ -14,7 +14,8 @@ provider "helm" {
   }
 }
 
-# Terraform data source that retrieves information about the AWS account associated with the credentials used to run Terraform.
+# Terraform data source that retrieves information about the AWS account 
+# Associated with the credentials used to run Terraform.
 data "aws_caller_identity" "current" {}
 
 
@@ -103,7 +104,7 @@ data "aws_eks_cluster_auth" "eks_cluster" {
   name = aws_eks_cluster.eks_cluster.name
 }
 
-# We will need to come back to this so that we can install node exporter on the worker nodes
+#Install node exporter on the worker nodes
 resource "aws_launch_template" "eks_workers" {
   name          = "eks-worker-template"
   instance_type = "t3.medium"
@@ -171,14 +172,14 @@ resource "aws_security_group_rule" "allow_port_8000" {
 }
 
 #How the hell are we going to set up a bastion host for worker nodes
-# resource "aws_security_group_rule" "allow_bastion_ssh_to_workers" {
-#   type                     = "ingress"
-#   from_port                = 22
-#   to_port                  = 22
-#   protocol                 = "tcp"
-#   security_group_id        = data.aws_security_group.eks_worker_sg.id # Worker node SG
-#   source_security_group_id = var.bastion_sg_id
-# }
+resource "aws_security_group_rule" "allow_bastion_ssh_to_workers" {
+  type                     = "ingress"
+  from_port                = 22
+  to_port                  = 22
+  protocol                 = "tcp"
+  security_group_id        = data.aws_security_group.eks_worker_sg.id # Worker node SG
+  source_security_group_id = var.bastion_sg_id
+}
 
 # Rule for node exporter
 resource "aws_security_group_rule" "allow_port_9100" {
