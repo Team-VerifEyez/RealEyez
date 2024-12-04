@@ -1,11 +1,14 @@
 pipeline {
     agent any
 
-    //  environment {
-    //     DOCKER_IMAGE = 'realeyez:latest' // The Docker image name
-    // }
-
     stages {
+        stage('Pull Image') {
+            steps {
+                echo 'Pulling image...'
+                sh 'docker pull joedhub/realeyez:1.0'
+            }
+        }
+
         stage('Run Docker Container') {
             steps {
                 echo 'Running the Docker container...'
@@ -15,8 +18,8 @@ pipeline {
                     docker stop realeyez || true
                     docker rm realeyez || true
 
-                    # Run the container using the local image
-                    docker run -d --name realeyez -p 8000:8000 realeyez:latest
+                    # Run the container using the pulled image
+                    docker run -d --name realeyez -p 8000:8000 joedhub/realeyez:1.0
                     '''
                 }
             }
@@ -32,4 +35,3 @@ pipeline {
         }
     }
 }
-
