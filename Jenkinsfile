@@ -2,7 +2,21 @@ pipeline {
     agent any
 
     stages {
+        stage('Check Branch') {
+            when {
+                expression {
+                    env.BRANCH_NAME == 'main'
+                }
+            }
+            steps {
+                echo 'This pipeline is running on the main branch.'
+            }
+        }
+
         stage('Pull Image') {
+            when {
+                branch 'main' // Ensures this stage only runs for the main branch
+            }
             steps {
                 echo 'Pulling image...'
                 sh 'docker pull joedhub/realeyez:1.0'
@@ -10,25 +24,23 @@ pipeline {
         }
 
         stage('Run Docker Container') {
+            when {
+                branch 'main' // Ensures this stage only runs for the main branch
+            }
             steps {
                 echo 'Running the Docker container...'
-                script {
-                    sh '''
-                    # Stop and remove any existing container with the same name
-                    docker stop realeyez || true
-                    docker rm realeyez || true
-
-                    # Run the container using the pulled image
-                    docker run -d --name realeyez -p 8000:8000 joedhub/realeyez:1.0
-                    '''
-                }
+                sh '''
+                docker stop realeyez || true
+                docker rm realeyez || true
+                docker run -d --name realeyez -p 8000:8000 joedhub/realeyez:1.0
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Application is running. Access it at http://<your-ip>:8000'
+            echo 'Application is running. Access it at http://<your-ip>:8000.'
         }
         failure {
             echo 'Pipeline failed. Check the logs for details.'
