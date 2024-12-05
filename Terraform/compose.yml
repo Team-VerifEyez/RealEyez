@@ -1,0 +1,15 @@
+services:
+
+  app-container:
+    build:
+      context: .
+      dockerfile: /home/ubuntu/ayanna/RealEyez/Terraform/Dockerfile.app
+
+  nginx-container:
+    build:
+      context: .
+      dockerfile: /home/ubuntu/ayanna/RealEyez/Terraform/Dockerfile.nginx
+    ports:
+      -   "80:80"
+    depends_on:
+      - app-container
