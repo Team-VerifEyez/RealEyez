@@ -1,6 +1,6 @@
 pipeline {
     agent any
-    
+     
     environment {
         REPORTS_DIR = "${WORKSPACE}/reports"
         SONAR_PROJECT_KEY = 'realeyez-local'
