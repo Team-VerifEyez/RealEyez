@@ -51,19 +51,13 @@ sleep 60
 
 ### Post Install Docker Group
 sudo groupadd docker
-sudo usermod -aG docker $USER
+sudo usermod -aG docker $USER #didnt run 
 newgrp docker
 
-# # Log into DockerHub
-# echo "Logging into DockerHub..."
-# echo "${docker_pass}" | docker login --username "${docker_user}" --password-stdin || {
-#   echo "Docker login failed!" >&2
-#   exit 1
-# }
 
 # Create docker-compose.yaml and deploy
 echo "Setting up Docker Compose..."
-mkdir -p /app
+mkdir -p /app # mkdir /home/ubuntu/RealEyez
 cd /app
 cat > docker-compose.yml <<EOF
 ${docker_compose}

@@ -1,8 +1,10 @@
+
 provider "aws" {
-    region = "us-east-1"  
-    access_key = "AKIAUMYCIUCTEIXHKHSH"
-    secret_key = "var.aws_secret_key"
+  region     = "us-east-1"
+  access_key = var.aws_access_key
+  secret_key = var.aws_secret_key
 }
+
 
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
@@ -133,8 +135,8 @@ resource "aws_security_group" "sg_ecomm_app" { # name that terraform recognizes
 
   ingress {
     description = "Node"
-    from_port   = 3000
-    to_port     = 3000
+    from_port   = 8000
+    to_port     = 8000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -171,19 +173,18 @@ resource "aws_security_group" "sg_ecomm_app" { # name that terraform recognizes
 }
 
 # Create app instances in AWS. 
-resource "aws_instance" "test_app"{
-  ami               = "ami-0866a3c8686eaeeba"                                                                          
+resource "aws_instance" "test_app" { #add line for volume 
+  ami               = "ami-0866a3c8686eaeeba"                                                                           
   instance_type     = "t3.micro"
-  # Attach an existing security group to the instance.
-  vpc_security_group_ids = aws_security_group.sg_ecomm_app.id
-  key_name          = "team5" # The key pair name for SSH access to the instance.
-  subnet_id         = aws_subnet.private_subnet1.id
+  vpc_security_group_ids = [aws_security_group.sg_ecomm_app.id]
+  key_name          = "team5"
+  subnet_id         = aws_subnet.public_subnet1.id
   user_data         = base64encode(templatefile("./deploy.sh", {
-      docker_compose = templatefile("./compose.yml")}))
+    docker_compose = templatefile("./compose.yml", {}) # Fixed line
+  }))
 
-  # Tagging the resource with a Name label. Tags help in identifying and organizing resources in AWS.
   tags = {
-    "Name" : "test_app"         
+    "Name" : "test_app"
   }
 }
 # output "subnet_ids" {
