@@ -52,7 +52,7 @@ resource "aws_instance" "bastion_az2"{
   subnet_id         = var.public_subnet_id_2
   # Tagging the resource with a Name label. Tags help in identifying and organizing resources in AWS.
   tags = {
-    "Name" : "bastion_az1"         
+    "Name" : "bastion_az2"         
   }
 
 }

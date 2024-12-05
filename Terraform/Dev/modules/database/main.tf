@@ -27,12 +27,7 @@ resource "aws_db_instance" "postgres_db" {
 resource "aws_db_parameter_group" "postgres_params" {
   name   = "realeyez-postgres-parameter-group"
   family = "postgres14"
-
-  parameter {
-    name  = "rds.iam_authentication"
-    value = "1"
-  }
-
+  
   tags = {
     Name = "Realeyez Postgres Parameter Group"
   }

@@ -1,5 +1,5 @@
 output "vpc_id" {
-  value = "aws_vpc.customvpc.id"
+  value = aws_vpc.customvpc.id
 }
 
 output "public_subnet_id_1" {
@@ -26,3 +26,10 @@ output "private_subnet_id_2_az2" {
   value = aws_subnet.priv_sub2_az2.id
 }
 
+output "private_subnet_cidr_az1" {
+  value = aws_subnet.priv_sub1_az1.cidr_block
+}
+
+output "private_subnet_cidr_az2" {
+  value = aws_subnet.priv_sub1_az2.cidr_block
+}

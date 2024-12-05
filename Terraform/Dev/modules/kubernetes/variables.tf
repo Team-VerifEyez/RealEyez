@@ -7,36 +7,39 @@ variable "region" {
 variable "vpc_id" {
 }
 
-variable "public_subnet_id_1" {
-}
-
-variable "public_subnet_id_2" {
-}
-
 variable "private_subnet_id_1_az1" {
 }
 
 variable "private_subnet_id_1_az2" {
 }
 
-
-variable "rds_instance_id" {
-  description = "The ID of the RDS instance"
-  type        = string
-}
-
 variable "rds_security_group_id" {
   description = "The security group ID of the RDS instance"
   type        = string
 }
-
-variable "db_username" {
-  description = "The username for the PostgreSQL database"
-  type        = string
-}
-
 variable "rds_endpoint" {
 }
 
-variable "bastion_sg_id" {
+variable "cluster_certificate_authority" {
+}
+
+variable "cluster_endpoint" {
+}
+
+variable "cluster_auth_token" {
+}
+
+variable "cluster_oidc_issuer" {
+}
+
+variable "cluster_name" {
+}
+
+variable "cluster_id" {
+}
+
+variable "rds_instance_id" {
+}
+
+variable "db_username" {
 }
