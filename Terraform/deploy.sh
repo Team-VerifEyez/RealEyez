@@ -51,7 +51,7 @@ sleep 60
 
 ### Post Install Docker Group
 sudo groupadd docker
-sudo usermod -aG docker $USER #didnt run 
+sudo usermod -aG docker $USER #didnt run sadly
 newgrp docker
 
 
