@@ -1,6 +1,10 @@
 pipeline {
     agent { label 'build-node' }
 
+    environment {
+        REPORTS_DIR = "${WORKSPACE}/reports"
+    }
+    
     stages {
         stage('Check Branch') {
             when {
