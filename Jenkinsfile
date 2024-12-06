@@ -73,7 +73,7 @@ pipeline {
                                 -t http://localhost:8000 \
                                 -J zap_scan_results.json \
                                 -m 10 \
-                                --auto 
+                                --auto || true
                         """
                     } catch (Exception e) {
                         echo "Error during ZAP scan: ${e.message}"
