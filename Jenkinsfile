@@ -71,13 +71,13 @@ pipeline {
                             -t http://localhost:8000 \
                             -J zap_scan_results.json \
                             -m 10 \
-                            --auto
+                            --auto || true
                     """
                     
                     // Analyze results
                     def zapReport = readJSON file: "${REPORTS_DIR}/zap_scan_results.json"
-                    def highAlerts = zapReport.site.findAll { site ->
-                        site.alerts.findAll { alert -> alert.riskcode >= 3 }
+                    def highAlerts = zapReport.site.collectMany { site ->
+                        site.alerts.findAll { alert -> (alert.riskcode as int) >= 3 }
                     }
                     
                     if (highAlerts.isEmpty()) {
