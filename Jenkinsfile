@@ -87,13 +87,17 @@ pipeline {
                     if (zapStatus == 0) {
                         echo "ZAP scan completed successfully with no issues."
                     } else if (zapStatus == 2) {
-                        if (highAlerts.isEmpty()) {
-                            echo "ZAP scan completed with warnings. But no High-Risk Security Vulnerabilities were found. Proceeding with pipeline."
+                        if (highAlerts.isEmpty()) && mediumAlerts.isEmpty()) {
+                            echo "ZAP scan completed with low-risk warnings only. Proceeding with pipeline."
+                        } else if (highAlerts.isEmpty()) {
+                            echo "ZAP scan completed with medium-risk warnings. Proceeding with caution."
+
                         } else {
-                            echo "ZAP scan completed with warnings and high-risk vulnerabilities detected. Proceeding with caution."
+                            echo "ZAP scan completed with high-risk vulnerabilities detected. Failing the pipeline."
+                            error 'High-risk vulnerabilities found during OWASP ZAP scan.'
                         }
                     } else if (zapStatus >= 3) {
-                        echo "ZAP scan encountered a critical issue (Exit Code: ${zapStatus}). Proceeding anyway."
+                        echo "ZAP scan encountered a critical issue (Exit Code: ${zapStatus}). Do not proceed."
                     }
                     
                     // Remove only the ZAP image
