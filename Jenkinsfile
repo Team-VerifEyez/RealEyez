@@ -80,21 +80,14 @@ pipeline {
                         site.alerts.findAll { alert -> alert.riskcode >= 3 }
                     }
                     
-                    // Assign the ZAP exit code to zapStatus
-                    int zapStatus = sh(script: 'exit 0', returnStatus: true)
-                    
-                    // Log the ZAP scan outcome based on the exit code
-                    if (zapStatus == 0) {
-                        echo "ZAP scan completed successfully with no issues."
-                    } else if (zapStatus == 2) {
-                        if (highAlerts.isEmpty()) {
-                                echo "ZAP scan completed with low-risk warnings only. Proceeding with pipeline."
-                        } else {
-                            echo "ZAP scan completed with high-risk vulnerabilities detected. Failing the pipeline."
-                            error 'High-risk vulnerabilities found during OWASP ZAP scan.'
+                    if (highAlerts.isEmpty()) {
+                        echo "No high-risk vulnerabilities found. Proceeding with the pipeline."
+                    } else {
+                        echo "High-risk vulnerabilities detected. Failing the pipeline.:"
+                        highAlerts.each { alert ->
+                                echo "- ${alert.name}: ${alert.description}"
                         }
-                    } else if (zapStatus >= 3) {
-                        echo "ZAP scan encountered a critical issue (Exit Code: ${zapStatus}). Do not proceed."
+                        error 'High-risk vulnerabilities found during OWASP ZAP scan.'
                     }
                     
                     // Remove only the ZAP image
