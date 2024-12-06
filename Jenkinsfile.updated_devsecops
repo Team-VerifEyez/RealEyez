@@ -1,10 +1,6 @@
 pipeline {
     agent { label 'build-node' }
-    
-    environment {
-        REPORTS_DIR = "${WORKSPACE}/reports"
-    }
-    
+
     stages {
         stage('Check Branch') {
             when {
@@ -16,43 +12,43 @@ pipeline {
                 echo 'This pipeline is running on the main branch.'
             }
         }
-        
+
         stage('Clean Up Disk Space') {
             steps {
                 echo 'Cleaning up unused Docker resources to free up space...'
                 sh '''
-                    docker system prune -af || true
+                docker system prune -af || true
                 '''
             }
         }
-        
+
         stage('Pull Image') {
             when {
-                branch 'main'
+                branch 'main' // Ensures this stage only runs for the main branch
             }
             steps {
                 echo 'Pulling image...'
                 sh 'docker pull joedhub/realeyez:1.0'
             }
         }
-        
+
         stage('Run Docker Container') {
             when {
-                branch 'main'
+                branch 'main' // Ensures this stage only runs for the main branch
             }
             steps {
                 echo 'Running the Docker container...'
                 sh '''
-                    docker stop realeyez || true
-                    docker rm realeyez || true
-                    docker run -d --name realeyez -p 8000:8000 joedhub/realeyez:1.0
+                docker stop realeyez || true
+                docker rm realeyez || true
+                docker run -d --name realeyez -p 8000:8000 joedhub/realeyez:1.0
                 '''
             }
         }
         
         stage('Dynamic Security Analysis - OWASP ZAP') {
             when {
-                branch 'main'
+                branch 'main' // Ensures this stage only runs for the main branch
             }
             steps {
                 script {
@@ -79,13 +75,16 @@ pipeline {
                     def highAlerts = zapReport.site.findAll { site ->
                         site.alerts.findAll { alert -> alert.riskcode >= 3 }
                     }
-                   
+                    
+                    // Assign the ZAP exit code to zapStatus
+                    int zapStatus = sh(script: "echo $?", returnStatus: true)
+                    
                     // Log the ZAP scan outcome based on the exit code
                     if (zapStatus == 0) {
                         echo "ZAP scan completed successfully with no issues."
                     } else if (zapStatus == 2) {
                         if (highAlerts.isEmpty()) {
-                            echo "ZAP scan completed with warnings. But no High-Risk Security Vulnerabilities found. Proceeding with pipeline."
+                            echo "ZAP scan completed with warnings. But no High-Risk Security Vulnerabilities were found. Proceeding with pipeline."
                         } else {
                             echo "ZAP scan completed with warnings and high-risk vulnerabilities detected. Proceeding with caution."
                         }
