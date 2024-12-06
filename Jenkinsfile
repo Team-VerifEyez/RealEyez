@@ -87,11 +87,12 @@ pipeline {
                     if (zapStatus == 0) {
                         echo "ZAP scan completed successfully with no issues."
                     } else if (zapStatus == 2) {
-                        if (highAlerts.isEmpty()) && mediumAlerts.isEmpty()) {
-                            echo "ZAP scan completed with low-risk warnings only. Proceeding with pipeline."
-                        } else if (highAlerts.isEmpty()) {
-                            echo "ZAP scan completed with medium-risk warnings. Proceeding with caution."
-
+                        if (highAlerts.isEmpty()) {
+                            if (mediumAlerts.isEmpty()) {
+                                echo "ZAP scan completed with low-risk warnings only. Proceeding with pipeline."
+                            } else {
+                                echo "ZAP scan completed with medium-risk warnings. Proceeding with caution."
+                            }
                         } else {
                             echo "ZAP scan completed with high-risk vulnerabilities detected. Failing the pipeline."
                             error 'High-risk vulnerabilities found during OWASP ZAP scan.'
