@@ -63,17 +63,23 @@ pipeline {
                     sh "docker pull ghcr.io/zaproxy/zaproxy:stable"
                     
                     // Run ZAP scan using Docker
-                    sh """
-                        docker run --rm \
-                            -v ${REPORTS_DIR}:/zap/wrk/:rw \
-                            --network="host" \
-                            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-                            -t http://localhost:8000 \
-                            -J zap_scan_results.json \
-                            -m 10 \
-                            --auto || true
-                    """
-                    
+                    try { 
+                        echo 'Running Zap Scan'
+                        sh """
+                            docker run --rm \
+                                -v ${REPORTS_DIR}:/zap/wrk/:rw \
+                                --network="host" \
+                                ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+                                -t http://localhost:8000 \
+                                -J zap_scan_results.json \
+                                -m 10 \
+                                --auto 
+                        """
+                    } catch (Exception e) {
+                        echo "Error during ZAP scan: ${e.message}"
+                        error 'OWASP ZAP scan failed.'
+                    }
+                        
                     // Analyze results
                     def zapReport = readJSON file: "${REPORTS_DIR}/zap_scan_results.json"
                     def highAlerts = zapReport.site.collectMany { site ->
