@@ -6,7 +6,7 @@ resource "aws_instance" "realeyez_bastion_az1"{
   ami               = var.ami                                                                          
   instance_type     = var.instance_type
   # Attach an existing security group to the instance.
-  vpc_security_group_ids = [aws_security_group.bastion_secuirty_group.id]
+  vpc_security_group_ids = [aws_security_group.bastion_security_group.id]
   key_name          = "team5" # The key pair name for SSH access to the instance.
   subnet_id         = var.public_subnet_id_1
   # Tagging the resource with a Name label. Tags help in identifying and organizing resources in AWS.
@@ -20,7 +20,7 @@ resource "aws_instance" "realeyez_bastion_az2"{
   ami               = var.ami                                                                          
   instance_type     = var.instance_type
   # Attach an existing security group to the instance.
-  vpc_security_group_ids = [aws_security_group.bastion_secuirty_group.id]
+  vpc_security_group_ids = [aws_security_group.bastion_security_group.id]
   key_name          = "team5" # The key pair name for SSH access to the instance.
   subnet_id         = var.public_subnet_id_2
   # Tagging the resource with a Name label. Tags help in identifying and organizing resources in AWS.
@@ -31,7 +31,7 @@ resource "aws_instance" "realeyez_bastion_az2"{
 }
 
 # Security Group for the bastion host
-resource "aws_security_group" "bastion_secuirty_group" {
+resource "aws_security_group" "bastion_security_group" {
   name        = "bastion_sg"
   description = "Security group for jumpbox"
   vpc_id = var.vpc_id
@@ -63,6 +63,7 @@ resource "aws_security_group" "bastion_secuirty_group" {
 resource "aws_instance" "realeyez_app_az1"{
   ami               = var.ami                                                                          
   instance_type     = var.instance_type
+
   # Attach an existing security group to the instance.
   vpc_security_group_ids = [var.app_security_group_id]
   key_name          = "team5" # The key pair name for SSH access to the instance.
@@ -76,6 +77,12 @@ resource "aws_instance" "realeyez_app_az1"{
       run_migrations = "true"
     })
   }))
+
+  root_block_device {
+    volume_size = 30 # Specify the size of the root volume in GB
+    volume_type = "gp3" # Optional: Specify the volume type (e.g., gp2, gp3, io1, etc.)
+  }
+
   # Tagging the resource with a Name label. Tags help in identifying and organizing resources in AWS.
   tags = {
     "Name" : "realeyez_app_az1"         
@@ -85,6 +92,7 @@ resource "aws_instance" "realeyez_app_az1"{
 resource "aws_instance" "realeyez_app_az2"{
   ami               = var.ami                                                                          
   instance_type     = var.instance_type
+
   # Attach an existing security group to the instance.
   vpc_security_group_ids = [var.app_security_group_id]
   key_name          = "team5" # The key pair name for SSH access to the instance.
@@ -98,6 +106,11 @@ resource "aws_instance" "realeyez_app_az2"{
       run_migrations = "false"
     })
   }))
+
+  root_block_device {
+    volume_size = 30 # Specify the size of the root volume in GB
+    volume_type = "gp3" # Optional: Specify the volume type (e.g., gp2, gp3, io1, etc.)
+  }
 
   # Tagging the resource with a Name label. Tags help in identifying and organizing resources in AWS.
   tags = {

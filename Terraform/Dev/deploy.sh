@@ -67,6 +67,9 @@ docker compose pull
 docker compose up -d --force-recreate
 echo "Docker Compose services deployed."
 
+# Waiting for the network
+sleep 300
+
 # Cleanup
 docker logout
 docker system prune -f
