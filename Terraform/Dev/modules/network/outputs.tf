@@ -26,3 +26,7 @@ output "private_subnet_id_2_az2" {
   value = aws_subnet.priv_sub2_az2.id
 }
 
+output "app_security_group_id" {
+  value = aws_security_group.app_security_group.id
+}
+
