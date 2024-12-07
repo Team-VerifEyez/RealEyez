@@ -48,7 +48,9 @@ resource "aws_subnet" "pub_sub_az1" {
   availability_zone = "us-east-1a"
   map_public_ip_on_launch = true
   tags = {
-    Name = "pub_sub_az1" 
+    Name = "pub_sub_az1"
+    "kubernetes.io/cluster/my-eks-cluster" = "shared"
+    "kubernetes.io/role/elb"         = "1"
   }
 }
 
@@ -82,7 +84,9 @@ resource "aws_subnet" "pub_sub_az2" {
   availability_zone = "us-east-1b"
   map_public_ip_on_launch = true
   tags = {
-    Name = "pub_sub_az2" 
+    Name = "pub_sub_az2"
+    "kubernetes.io/cluster/my-eks-cluster" = "shared"
+    "kubernetes.io/role/elb"         = "1"
   }
 }
 

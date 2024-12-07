@@ -182,6 +182,24 @@ resource "aws_security_group_rule" "allow_port_9100" {
   cidr_blocks       = ["0.0.0.0/0"] 
 }
 
+resource "aws_security_group_rule" "allow_http" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  security_group_id = data.aws_security_group.eks_worker_sg.id
+  cidr_blocks       = ["0.0.0.0/0"] 
+}
+
+resource "aws_security_group_rule" "allow_https" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  security_group_id = data.aws_security_group.eks_worker_sg.id
+  cidr_blocks       = ["0.0.0.0/0"] 
+}
+
 # Output Values
 output "eks_cluster_endpoint" {
   value = aws_eks_cluster.eks_cluster.endpoint

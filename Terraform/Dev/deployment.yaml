@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realeyez-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: realeyez
+  template:
+    metadata:
+      labels:
+        app: realeyez
+    spec:
+      containers:
+      - name: realeyez
+        image: tjwkura5/real_eyez:v1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DB_HOST
+          value: "realeyez-db.cfqwka6ueouo.us-east-1.rds.amazonaws.com"

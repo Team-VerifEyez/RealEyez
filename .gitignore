@@ -42,6 +42,7 @@ Terraform/*/.terraform.lock.hcl
 Terraform/*/terraform.tfstate
 Terraform/*/terraform.tfstate.backup
 Terraform/*/plan.tfplan
+Terraform/*/terraform.tfstate.bak
 
 #Ignore
 team5.pem

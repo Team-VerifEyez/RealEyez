@@ -41,23 +41,6 @@ module "Cluster" {
   depends_on = [ module.Compute ]
 }
 
-module "Kubernetes" {
-  source = "./modules/kubernetes"
-  vpc_id = module.VPC.vpc_id
-  private_subnet_id_1_az1 = module.VPC.private_subnet_id_1_az1
-  private_subnet_id_1_az2 = module.VPC.private_subnet_id_1_az2
-  rds_endpoint = module.RDS.rds_endpoint
-  cluster_auth_token = module.Cluster.eks_cluster_auth_token
-  cluster_certificate_authority = module.Cluster.eks_cluster_certificate_authority
-  cluster_endpoint = module.Cluster.eks_cluster_endpoint
-  cluster_name = module.Cluster.eks_cluster_name
-  cluster_id = module.Cluster.eks_cluster_id
-  cluster_oidc_issuer = module.Cluster.eks_oidc_issuer
-  rds_security_group_id = module.RDS.rds_security_group_id
-  rds_instance_id = module.RDS.rds_instance_id
-  db_username = module.RDS.db_username
-}
-
 output "cluster_endpoint" {
   value = module.Cluster.eks_cluster_endpoint
 }

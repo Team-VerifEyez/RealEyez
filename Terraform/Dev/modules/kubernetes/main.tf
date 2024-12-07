@@ -154,208 +154,208 @@ resource "helm_release" "aws_load_balancer_controller" {
   recreate_pods = true
 }
 
-resource "null_resource" "wait_for_lb_controller" {
-  depends_on = [
-    helm_release.aws_load_balancer_controller
-  ]
+# resource "null_resource" "wait_for_lb_controller" {
+#   depends_on = [
+#     helm_release.aws_load_balancer_controller
+#   ]
 
-  provisioner "local-exec" {
-    command = <<EOT
-      echo "Waiting for AWS Load Balancer Controller pods..."
-      kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=aws-load-balancer-controller -n kube-system --timeout=300s
-    EOT
-  }
-}
+#   provisioner "local-exec" {
+#     command = <<EOT
+#       echo "Waiting for AWS Load Balancer Controller pods..."
+#       kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=aws-load-balancer-controller -n kube-system --timeout=300s
+#     EOT
+#   }
+# }
 
-# Cert Manager Installation
-resource "helm_release" "cert_manager" {
-  name       = "cert-manager"
-  repository = "https://charts.jetstack.io"
-  chart      = "cert-manager"
-  namespace  = "cert-manager"
-  version    = "v1.12.0"  # Adjust the version as needed
+# # Cert Manager Installation
+# resource "helm_release" "cert_manager" {
+#   name       = "cert-manager"
+#   repository = "https://charts.jetstack.io"
+#   chart      = "cert-manager"
+#   namespace  = "cert-manager"
+#   version    = "v1.12.0"  # Adjust the version as needed
 
-  create_namespace = true
+#   create_namespace = true
 
-  set {
-    name  = "installCRDs"
-    value = "true"
-  }
-}
+#   set {
+#     name  = "installCRDs"
+#     value = "true"
+#   }
+# }
 
-# Self-Signed Cluster Issuer
-resource "kubernetes_manifest" "selfsigned_cluster_issuer" {
-  depends_on = [helm_release.cert_manager]
+# # Self-Signed Cluster Issuer
+# resource "kubernetes_manifest" "selfsigned_cluster_issuer" {
+#   depends_on = [helm_release.cert_manager]
 
-  manifest = {
-    apiVersion = "cert-manager.io/v1"
-    kind       = "ClusterIssuer"
-    metadata = {
-      name = "selfsigned-cluster-issuer"  # You can choose any name for your self-signed issuer
-    }
-    spec = {
-      selfSigned = {}  # Defines a self-signed certificate issuer
-    }
-  }
-}
+#   manifest = {
+#     apiVersion = "cert-manager.io/v1"
+#     kind       = "ClusterIssuer"
+#     metadata = {
+#       name = "selfsigned-cluster-issuer"  # You can choose any name for your self-signed issuer
+#     }
+#     spec = {
+#       selfSigned = {}  # Defines a self-signed certificate issuer
+#     }
+#   }
+# }
 
-resource "kubernetes_manifest" "aws_load_balancer_serving_cert" {
-  depends_on = [kubernetes_manifest.selfsigned_cluster_issuer]
+# resource "kubernetes_manifest" "aws_load_balancer_serving_cert" {
+#   depends_on = [kubernetes_manifest.selfsigned_cluster_issuer]
 
-  manifest = {
-    apiVersion = "cert-manager.io/v1"
-    kind       = "Certificate"
-    metadata = {
-      name      = "aws-load-balancer-serving-cert"
-      namespace = "kube-system"
-    }
-    spec = {
-      dnsNames = [
-        "*" 
-      ]
-      secretName = "aws-load-balancer-serving-cert"
-      issuerRef = {
-        name = "selfsigned-cluster-issuer"
-        kind = "ClusterIssuer"
-      }
-    }
-  }
-}
-
-
-resource "null_resource" "wait_for_certificate" {
-  depends_on = [
-    kubernetes_manifest.selfsigned_cluster_issuer,
-    helm_release.cert_manager,
-    kubernetes_manifest.aws_load_balancer_serving_cert
-  ]
-
-  provisioner "local-exec" {
-    command = <<EOT
-      echo "Waiting for certificate to be issued..."
-      kubectl wait --for=condition=ready certificate aws-load-balancer-serving-cert -n kube-system --timeout=300s
-    EOT
-  }
-}
-
-################################## APPLICATION DEPLOYMENT #############################################
-resource "kubernetes_manifest" "realeyez_ingress" {
-  manifest = {
-    apiVersion = "networking.k8s.io/v1"
-    kind       = "Ingress"
-    metadata = {
-      name      = "realeyez-ingress"
-      namespace = "kube-system"
-      annotations = {
-        "kubernetes.io/ingress.class"               = "alb"                        # Matches ingress_class2.yml
-        "alb.ingress.kubernetes.io/scheme"          = "internet-facing"
-        "alb.ingress.kubernetes.io/target-type"     = "instance"                   # Match the target type from ingress2.yml
-        "alb.ingress.kubernetes.io/tags"            = "Environment=staging"        # Optional tags for ALB
-        "cert-manager.io/issuer"                    = "selfsigned-cluster-issuer"  # Keep for testing; replace for production
-      }
-    }
-    spec = {
-      rules = [
-        {
-          host = "localhost"
-          http = {
-            paths = [
-              {
-                path = "/"
-                pathType = "Prefix"
-                backend = {
-                  service = {
-                    name = "realeyez-service"  # Replace with your actual service name
-                    port = {
-                      number = 80
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        }
-      ]
-      tls = [
-        {
-          hosts      = ["localhost"]  # Replace with your actual domain for HTTPS
-          secretName = "realeye-app-tls"
-        }
-      ]
-    }
-  }
-}
-
-resource "kubernetes_manifest" "realeyez_service" {
-  manifest = {
-    apiVersion = "v1"
-    kind       = "Service"
-    metadata = {
-      name      = "realeyez-service"
-      namespace = "default"
-    }
-    spec = {
-      selector = {
-        app = "realeyez"
-      }
-      ports = [
-        {
-          port       = 80
-          targetPort = 8000
-        }
-      ]
-      type = "ClusterIP"  
-    }
-  }
-}
+#   manifest = {
+#     apiVersion = "cert-manager.io/v1"
+#     kind       = "Certificate"
+#     metadata = {
+#       name      = "aws-load-balancer-serving-cert"
+#       namespace = "kube-system"
+#     }
+#     spec = {
+#       dnsNames = [
+#         "*" 
+#       ]
+#       secretName = "aws-load-balancer-serving-cert"
+#       issuerRef = {
+#         name = "selfsigned-cluster-issuer"
+#         kind = "ClusterIssuer"
+#       }
+#     }
+#   }
+# }
 
 
-resource "kubernetes_manifest" "realeyez_deployment" {
-  depends_on = [kubernetes_manifest.realeyez_ingress]  # Ensure the ingress is created first
+# resource "null_resource" "wait_for_certificate" {
+#   depends_on = [
+#     kubernetes_manifest.selfsigned_cluster_issuer,
+#     helm_release.cert_manager,
+#     kubernetes_manifest.aws_load_balancer_serving_cert
+#   ]
 
-  manifest = {
-    apiVersion = "apps/v1"
-    kind       = "Deployment"
-    metadata = {
-      name      = "realeyez"
-      namespace = "default"
-    }
-    spec = {
-      replicas = 2
-      selector = {
-        matchLabels = {
-          app = "realeyez"
-        }
-      }
-      template = {
-        metadata = {
-          labels = {
-            app = "realeyez"
-          }
-        }
-        spec = {
-          containers = [
-            {
-              name  = "realeyez"
-              image = "tjwkura5/real_eyez:latest"
-              ports = [
-                {
-                  containerPort = 8000
-                }
-              ]
-              env = [
-                {
-                  name  = "DB_HOST"  # The name of the environment variable
-                  value = var.rds_endpoint # The value of the environment variable
-                }
-              ]
-            }
-          ]
-        }
-      }
-    }
-  }
-}
+#   provisioner "local-exec" {
+#     command = <<EOT
+#       echo "Waiting for certificate to be issued..."
+#       kubectl wait --for=condition=ready certificate aws-load-balancer-serving-cert -n kube-system --timeout=300s
+#     EOT
+#   }
+# }
+
+# ################################## APPLICATION DEPLOYMENT #############################################
+# resource "kubernetes_manifest" "realeyez_ingress" {
+#   manifest = {
+#     apiVersion = "networking.k8s.io/v1"
+#     kind       = "Ingress"
+#     metadata = {
+#       name      = "realeyez-ingress"
+#       namespace = "kube-system"
+#       annotations = {
+#         "kubernetes.io/ingress.class"               = "alb"                        # Matches ingress_class2.yml
+#         "alb.ingress.kubernetes.io/scheme"          = "internet-facing"
+#         "alb.ingress.kubernetes.io/target-type"     = "instance"                   # Match the target type from ingress2.yml
+#         "alb.ingress.kubernetes.io/tags"            = "Environment=staging"        # Optional tags for ALB
+#         "cert-manager.io/issuer"                    = "selfsigned-cluster-issuer"  # Keep for testing; replace for production
+#       }
+#     }
+#     spec = {
+#       rules = [
+#         {
+#           host = "localhost"
+#           http = {
+#             paths = [
+#               {
+#                 path = "/"
+#                 pathType = "Prefix"
+#                 backend = {
+#                   service = {
+#                     name = "realeyez-service"  # Replace with your actual service name
+#                     port = {
+#                       number = 80
+#                     }
+#                   }
+#                 }
+#               }
+#             ]
+#           }
+#         }
+#       ]
+#       tls = [
+#         {
+#           hosts      = ["localhost"]  # Replace with your actual domain for HTTPS
+#           secretName = "realeye-app-tls"
+#         }
+#       ]
+#     }
+#   }
+# }
+
+# resource "kubernetes_manifest" "realeyez_service" {
+#   manifest = {
+#     apiVersion = "v1"
+#     kind       = "Service"
+#     metadata = {
+#       name      = "realeyez-service"
+#       namespace = "default"
+#     }
+#     spec = {
+#       selector = {
+#         app = "realeyez"
+#       }
+#       ports = [
+#         {
+#           port       = 80
+#           targetPort = 8000
+#         }
+#       ]
+#       type = "ClusterIP"  
+#     }
+#   }
+# }
+
+
+# resource "kubernetes_manifest" "realeyez_deployment" {
+#   depends_on = [kubernetes_manifest.realeyez_ingress]  # Ensure the ingress is created first
+
+#   manifest = {
+#     apiVersion = "apps/v1"
+#     kind       = "Deployment"
+#     metadata = {
+#       name      = "realeyez"
+#       namespace = "default"
+#     }
+#     spec = {
+#       replicas = 2
+#       selector = {
+#         matchLabels = {
+#           app = "realeyez"
+#         }
+#       }
+#       template = {
+#         metadata = {
+#           labels = {
+#             app = "realeyez"
+#           }
+#         }
+#         spec = {
+#           containers = [
+#             {
+#               name  = "realeyez"
+#               image = "tjwkura5/real_eyez:latest"
+#               ports = [
+#                 {
+#                   containerPort = 8000
+#                 }
+#               ]
+#               env = [
+#                 {
+#                   name  = "DB_HOST"  # The name of the environment variable
+#                   value = var.rds_endpoint # The value of the environment variable
+#                 }
+#               ]
+#             }
+#           ]
+#         }
+#       }
+#     }
+#   }
+# }
 
 
 
