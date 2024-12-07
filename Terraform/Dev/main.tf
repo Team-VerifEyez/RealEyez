@@ -20,15 +20,19 @@ module "RDS" {
   vpc_id = module.VPC.vpc_id
   private_subnet_id_2_az1 = module.VPC.private_subnet_id_2_az1
   private_subnet_id_2_az2 = module.VPC.private_subnet_id_2_az2
-  depends_on = [module.VPC]
+  depends_on = [module.VPC] 
 }
 
-module "Kubernetes" {
-  source = "./modules/kubernetes"
+module "EC2" {
+  source = "./modules/compute"
   vpc_id = module.VPC.vpc_id
   private_subnet_id_1_az1 = module.VPC.private_subnet_id_1_az1
   private_subnet_id_1_az2 = module.VPC.private_subnet_id_1_az2
   public_subnet_id_1 = module.VPC.public_subnet_id_1
   public_subnet_id_2 = module.VPC.public_subnet_id_2
-  depends_on = [module.VPC]
+  rds_endpoint = module.RDS.rds_endpoint
+  app_security_group_id = module.VPC.app_security_group_id
+  dockerhub_username = var.dockerhub_username
+  dockerhub_password = var.dockerhub_password
 }
+

@@ -25,3 +25,15 @@ variable "ami" {
   type = string
   default = "ami-0866a3c8686eaeeba"
 }
+
+variable "rds_endpoint" {
+}
+
+variable "dockerhub_username" {
+}
+
+variable "dockerhub_password" {
+}
+
+variable "app_security_group_id" {
+}

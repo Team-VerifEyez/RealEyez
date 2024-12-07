@@ -247,4 +247,56 @@ resource "aws_route_table_association" "pri_rt_assc2_az2" {
   route_table_id = aws_route_table.priv_rt_az2.id
 
 }
- 
+
+#Creating this here so that its available for the RDS
+resource "aws_security_group" "app_security_group" {
+  name        = "app_sg"
+  description = "Security group for our app"
+  vpc_id = aws_vpc.customvpc.id
+
+  # Ingress (inbound) rules
+  ingress {
+    description = "Allow SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Allow SSH from any IP
+  }
+
+  ingress {
+    description = "Allow HTTP traffic"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Allow HTTP from any IP
+  }
+
+  ingress {
+    description = "Django runs on port 8000"
+    from_port   = 8000
+    to_port     = 8000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Allow inbound traffic on Node Exporters default port 9100"
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Egress (outbound) rule to allow all traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]  # Allow all outbound traffic
+  }
+
+  tags = {
+    Name : "app_sg"
+    Terraform : "true"
+  }
+}
