@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  backend:
+    image: joedhub/realeyez-app-2
+    container_name: realeyez
+    environment:
+      - DB_HOST=${rds_endpoint}
+      - RUN_MIGRATIONS=${run_migrations}
+    ports:
+        - "8000:8000"
