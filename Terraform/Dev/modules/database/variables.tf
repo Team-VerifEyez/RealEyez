@@ -1,6 +1,6 @@
 variable "db_instance_class" {
   description = "The instance type of the RDS instance"
-  default     = "db.t3.micro"
+  default     = "db.t3.micro" #This instance class would need to be larger than a micro to create multi az failover
 }
 
 variable "db_name" {
