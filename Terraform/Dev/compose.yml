@@ -7,5 +7,6 @@ services:
     environment:
       - DB_HOST=${rds_endpoint}
       - RUN_MIGRATIONS=${run_migrations}
+      - DJANGO_KEY=${django_key}
     ports:
         - "8000:8000"
