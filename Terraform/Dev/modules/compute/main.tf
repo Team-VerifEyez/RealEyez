@@ -130,8 +130,8 @@ data "template_file" "prometheus_config" {
 
   vars = {
     targets = join(",", [
-      aws_instance.realeyez_app_az1.private_ip,
-      aws_instance.realeyez_app_az2.private_ip
+      "${aws_instance.realeyez_app_az1.private_ip}:9100",
+      "${aws_instance.realeyez_app_az2.private_ip}:9100"
     ])
   }
 }
@@ -181,7 +181,13 @@ sudo docker restart prometheus
 sudo docker run -d --name grafana -p 3000:3000 grafana/grafana
 
 EOF
+
+tags = {
+    "Name" : "realeyez_monitoring"         
+  }
 }
+
+
 
 
 resource "aws_security_group" "monitoring_sg" {
