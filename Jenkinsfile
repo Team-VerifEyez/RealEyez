@@ -7,6 +7,10 @@ pipeline {
         SONARQUBE_PROJECT_NAME = 'realeyez'         
         SONARQUBE_HOST_URL = 'http://172.31.40.40:9001'  
         SONARQUBE_LOGIN = credentials('sonarqube-token')  
+
+        // Terraform credentials
+	    DOCKER_CREDS = credentials('dockerhub-credentials')
+        DB_PASSWORD = credentials('db-password')
     }
     
     stages {
