@@ -119,6 +119,114 @@ resource "aws_instance" "realeyez_app_az2"{
   }
 }
 
+####################################################
+## Referencing IP Address 
+####################################################
+data "template_file" "prometheus_config" {
+  depends_on = [
+    aws_instance.realeyez_app_az1,
+    aws_instance.realeyez_app_az2
+  ]
+  template = file("${path.module}/prometheus.tpl")
+
+  vars = {
+    targets = join(",", [
+      "${aws_instance.realeyez_app_az1.private_ip}:9100",
+      "${aws_instance.realeyez_app_az2.private_ip}:9100"
+    ])
+  }
+}
+
+####################################################
+## Creating Monitoring Instance
+####################################################
+resource "aws_instance" "monitoring" {
+  ami                    = var.ami
+  instance_type          = var.instance_type
+  subnet_id              = var.default_subnet_id
+  key_name               = "team5" # The key pair name for SSH access to the instance.
+  vpc_security_group_ids = [aws_security_group.monitoring_sg.id]
+
+  user_data = <<EOF
+#!/bin/bash
+# Redirect stdout and stderr to a log file
+exec > /var/log/user-data.log 2>&1
+
+# Update and install Docker
+sudo apt update -y
+sudo apt install -y docker.io
+
+# Enable and start Docker service
+sudo systemctl enable docker
+sudo systemctl start docker
+
+# Run Prometheus container
+sudo docker run -d --name prometheus -p 9090:9090 prom/prometheus
+
+# Wait for Prometheus to start
+until sudo docker ps -q -f name=prometheus; do
+    echo "Waiting for Prometheus to start..."
+    sleep 5
+done
+
+# Write configuration to host and copy it to the container
+echo '${data.template_file.prometheus_config.rendered}' > /tmp/prometheus.yml
+
+# Copy the configuration file into the Prometheus container
+sudo docker cp /tmp/prometheus.yml prometheus:/etc/prometheus/prometheus.yml
+
+# Restart Prometheus to apply the new configuration
+sudo docker restart prometheus
+
+# Run Grafana container
+sudo docker run -d --name grafana -p 3000:3000 grafana/grafana
+
+EOF
+
+tags = {
+    "Name" : "realeyez_monitoring"         
+  }
+}
+
+
+
+
+resource "aws_security_group" "monitoring_sg" {
+  name_prefix = "monitoring"
+  vpc_id      = var.default_vpc_id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "SSH access"
+  }
+
+  ingress {
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Prometheus"
+  }
+
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Grafana"
+  }
+
+  # Egress (outbound) rule to allow all traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]  # Allow all outbound traffic
+  }
+}
 
 
 # Create Security Group for the Load Balancer
@@ -150,7 +258,7 @@ resource "aws_lb_target_group" "my_target_group" {
 
   health_check {
     path                = "/"
-    interval            = 30
+    interval            = 10
     timeout             = 5
     healthy_threshold  = 2
     unhealthy_threshold = 2

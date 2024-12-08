@@ -3,14 +3,16 @@ pipeline {
 
     environment {
         REPORTS_DIR = "${WORKSPACE}/reports"
+        SONARQUBE_PROJECT_KEY = 'realeyez'   
+        SONARQUBE_PROJECT_NAME = 'realeyez'         
+        SONARQUBE_HOST_URL = 'http://172.31.40.40:9001'  
+        SONARQUBE_LOGIN = credentials('sonarqube-token')  
     }
     
     stages {
         stage('Check Branch') {
             when {
-                expression {
-                    env.BRANCH_NAME == 'main'
-                }
+                expression { env.BRANCH_NAME == 'main' }
             }
             steps {
                 echo 'This pipeline is running on the main branch.'
@@ -20,16 +22,12 @@ pipeline {
         stage('Clean Up Disk Space') {
             steps {
                 echo 'Cleaning up unused Docker resources to free up space...'
-                sh '''
-                docker system prune -af || true
-                '''
+                sh 'docker system prune -af || true'
             }
         }
 
         stage('Pull Image') {
-            when {
-                branch 'main' // Ensures this stage only runs for the main branch
-            }
+            when { branch 'main' }
             steps {
                 echo 'Pulling image...'
                 sh 'docker pull joedhub/realeyez:1.0'
@@ -37,34 +35,40 @@ pipeline {
         }
 
         stage('Run Docker Container') {
-            when {
-                branch 'main' // Ensures this stage only runs for the main branch
-            }
+            when { branch 'main' }
             steps {
                 echo 'Running the Docker container...'
                 sh '''
-                docker stop realeyez || true
-                docker rm realeyez || true
-                docker run -d --name realeyez -p 8000:8000 joedhub/realeyez:1.0
+                    docker stop realeyez || true
+                    docker rm realeyez || true
+                    docker run -d --name realeyez -p 8000:8000 joedhub/realeyez:1.0
                 '''
             }
         }
-        
-        stage('Dynamic Security Analysis - OWASP ZAP') {
-            when {
-                branch 'main' // Ensures this stage only runs for the main branch
+
+        stage('SonarQube Analysis') {
+            when { branch 'main' }
+            steps {
+                echo 'Running SonarQube analysis...'
+               withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONARQUBE_TOKEN')]) {
+                    sh """
+                         export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+                         export PATH=\$JAVA_HOME/bin:\$PATH
+                        /opt/sonar-scanner/bin/sonar-scanner -Dsonar.projectKey=${SONARQUBE_PROJECT_KEY} -Dsonar.projectName=${SONARQUBE_PROJECT_NAME} -Dsonar.sources=./detection,./RealVsAI -Dsonar.host.url=${SONARQUBE_HOST_URL} -Dsonar.login=${SONARQUBE_TOKEN}
+                    """
+                }
             }
+        }
+
+        stage('Dynamic Security Analysis - OWASP ZAP') {
+            when { branch 'main' }
             steps {
                 script {
-                    // Ensure reports directory exists
                     sh "mkdir -p ${REPORTS_DIR}"
-                    
-                    // Pull ZAP Docker image
                     sh "docker pull ghcr.io/zaproxy/zaproxy:stable"
                     
-                    // Run ZAP scan using Docker
                     try { 
-                        echo 'Running Zap Scan'
+                        echo 'Running ZAP Scan...'
                         sh """
                             docker run --rm \
                                 -v ${REPORTS_DIR}:/zap/wrk/:rw \
@@ -79,8 +83,7 @@ pipeline {
                         echo "Error during ZAP scan: ${e.message}"
                         error 'OWASP ZAP scan failed.'
                     }
-                        
-                    // Analyze results
+                    
                     def zapReport = readJSON file: "${REPORTS_DIR}/zap_scan_results.json"
                     def highAlerts = zapReport.site.collectMany { site ->
                         site.alerts.findAll { alert -> (alert.riskcode as int) >= 3 }
@@ -89,14 +92,13 @@ pipeline {
                     if (highAlerts.isEmpty()) {
                         echo "No high-risk vulnerabilities found. Proceeding with the pipeline."
                     } else {
-                        echo "High-risk vulnerabilities detected. Failing the pipeline.:"
+                        echo "High-risk vulnerabilities detected. Failing the pipeline!:"
                         highAlerts.each { alert ->
-                                echo "- ${alert.name}: ${alert.description}"
+                            echo "- ${alert.name}: ${alert.description}"
                         }
                         error 'High-risk vulnerabilities found during OWASP ZAP scan.'
                     }
-                    
-                    // Remove only the ZAP image
+
                     sh "docker rmi ghcr.io/zaproxy/zaproxy:stable"
                 }
             }

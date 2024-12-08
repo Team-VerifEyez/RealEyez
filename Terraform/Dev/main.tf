@@ -4,11 +4,20 @@ terraform {
       source  = "hashicorp/aws"
       version = "5.73.0"
     }
+
+    time = {
+      source  = "hashicorp/time"
+      version = "0.7.0"  # specify the version you want
+    }
   }
 }
 
 provider "aws" {
   region     = var.region
+}
+
+resource "time_static" "start" {
+  id = "start"
 }
 
 module "VPC" {
@@ -38,3 +47,12 @@ module "EC2" {
   django_key = var.django_key
 }
 
+resource "time_static" "end" {
+  id = "end"
+}
+
+# Calculate duration (output)
+output "total_duration" {
+  value = time_static.end.time - time_static.start.time
+  description = "The total duration of the Terraform deployment in seconds."
+}
