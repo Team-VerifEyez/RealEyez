@@ -9,7 +9,7 @@ pipeline {
         SONARQUBE_LOGIN = credentials('sonarqube-token')  
 
         // Terraform credentials
-	    DOCKER_CREDS = credentials('dockerhub-credentials')
+	DOCKER_CREDS = credentials('dockerhub-credentials')
         DB_PASSWORD = credentials('db-password')
     }
     
