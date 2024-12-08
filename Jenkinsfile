@@ -7,6 +7,7 @@ pipeline {
         SONARQUBE_PROJECT_NAME = 'realeyez'         
         SONARQUBE_HOST_URL = 'http://172.31.40.40:9001'  
         SONARQUBE_LOGIN = credentials('sonarqube-token')  
+        DJANGO_KEY = credentials('DJANGO_KEY')
     }
 
     stages {
@@ -39,7 +40,6 @@ pipeline {
         }
 
         stage('Cleanup') {
-            agent { label 'build-node' }
             steps {
             sh '''
                 echo "Performing in-pipeline cleanup after Test..."
@@ -61,10 +61,12 @@ pipeline {
             when { branch 'main' }
             steps {
                 echo 'Running the Docker container...'
+                withCredentials([string(credentialsId: 'DJANGO_KEY', variable: 'DJANGO_KEY')]) {
                 sh '''
-                    docker run -d --name owasp_realeyez -p 8000:8000 joedhub/owasp_realeyez:latest
+                    docker run -d --name owasp_realeyez -p 8000:8000 -e DJANGO_KEY=${DJANGO_KEY} joedhub/owasp_realeyez:latest
                 '''
             }
+            } 
         }
 
         stage('Dynamic Security Analysis - OWASP ZAP') {
@@ -123,23 +125,30 @@ pipeline {
         }
 
         stage('Terraform Plan') {
-            agent { label 'build-node' }
             steps {
-                dir('Terraform') {
-                    sh '''
-                        echo "Initializing Terraform..."
-                        terraform init
+                dir('Terraform/Dev') {
+                    withCredentials([
+                        string(credentialsId: 'DOCKERHUB_USERNAME', variable: 'DOCKERHUB_USERNAME'),
+                        string(credentialsId: 'DOCKERHUB_PASSWORD', variable: 'DOCKERHUB_PASSWORD'),
+                        string(credentialsId: 'RDS_PASSWORD', variable: 'RDS_PASSWORD'),
+                        string(credentialsId: 'DJANGO_KEY', variable: 'DJANGO_KEY')
+                    ]) {
+                        sh '''
+                            echo "Initializing Terraform..."
+                            terraform init
 
-                        echo "Running Terraform plan..."
-                        terraform plan -out=tfplan \
-                          -var="dockerhub_username=${DOCKERHUB_USERNAME}" \
-                          -var="dockerhub_password=${DOCKERHUB_PASSWORD}" \
-                          -var="db_password=${RDS_PASSWORD}" \
-                          -var="django_key=${DJANGO_KEY}"
-                    '''
+                            echo "Running Terraform plan..."
+                            terraform plan -out=tfplan \
+                            -var="dockerhub_username=${DOCKERHUB_USERNAME}" \
+                            -var="dockerhub_password=${DOCKERHUB_PASSWORD}" \
+                            -var="db_password=${RDS_PASSWORD}" \
+                            -var="django_key=${DJANGO_KEY}"
+                        '''
+                    }
                 }
             }
         }
+        
     }
 
     post {
