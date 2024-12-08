@@ -39,7 +39,6 @@ pipeline {
         }
 
         stage('Cleanup') {
-            agent { label 'build-node' }
             steps {
             sh '''
                 echo "Performing in-pipeline cleanup after Test..."
@@ -123,7 +122,6 @@ pipeline {
         }
 
         stage('Terraform Plan') {
-            agent { label 'build-node' }
             steps {
                 dir('Terraform') {
                     sh '''
