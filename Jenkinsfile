@@ -38,6 +38,17 @@ pipeline {
             }
         }
 
+        stage('Cleanup') {
+            agent { label 'build-node' }
+            steps {
+            sh '''
+                echo "Performing in-pipeline cleanup after Test..."
+                docker system prune -f
+                git clean -ffdx -e ".tfstate" -e ".terraform/*"
+            '''
+      }
+    }
+
         stage('Pull Image') {
             when { branch 'main' }
             steps {
