@@ -79,14 +79,6 @@ WSGI_APPLICATION = "RealVsAI.wsgi.application"
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'Realeyez',
-        'USER': 'team1',
-        'PASSWORD': os.environ['RDS_PASSWORD'],
-        'HOST': os.environ.get('DB_HOST', '').split(':')[0],
-        'PORT': '5432',
-    }, 
-    'sqlite': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }

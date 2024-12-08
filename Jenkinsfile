@@ -105,6 +105,9 @@ pipeline {
         }
     }
     
+
+
+
     post {
         success {
             echo 'Application is running. Access it at http://<your-ip>:8000.'
