@@ -20,6 +20,7 @@ module "RDS" {
   vpc_id = module.VPC.vpc_id
   private_subnet_id_2_az1 = module.VPC.private_subnet_id_2_az1
   private_subnet_id_2_az2 = module.VPC.private_subnet_id_2_az2
+  db_password = var.db_password
   depends_on = [module.VPC] 
 }
 
@@ -34,5 +35,6 @@ module "EC2" {
   app_security_group_id = module.VPC.app_security_group_id
   dockerhub_username = var.dockerhub_username
   dockerhub_password = var.dockerhub_password
+  django_key = var.django_key
 }
 

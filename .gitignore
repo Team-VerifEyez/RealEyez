@@ -41,6 +41,7 @@ Terraform/*/.terraform/*
 Terraform/*/.terraform.lock.hcl
 Terraform/*/terraform.tfstate
 Terraform/*/terraform.tfstate.backup
+Terraform/*/terraform.tfstate.bak
 Terraform/*/plan.tfplan
 
 #Ignore

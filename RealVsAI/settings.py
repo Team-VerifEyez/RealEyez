@@ -22,7 +22,7 @@ TEMP_DIR = os.path.join(BASE_DIR, 'templates')
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-wq6z0#x&p0$bul2q)gvz9(86-z!(t#84f1gn^0t*n4@y+)$1su"
+SECRET_KEY = os.environ['DJANGO_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -82,7 +82,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'Realeyez',
         'USER': 'team1',
-        'PASSWORD': 'abcd1234',
+        'PASSWORD': os.environ['RDS_PASSWORD'],
         'HOST': os.environ.get('DB_HOST', '').split(':')[0],
         'PORT': '5432',
     }, 

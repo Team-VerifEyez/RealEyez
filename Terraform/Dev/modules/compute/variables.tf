@@ -37,3 +37,6 @@ variable "dockerhub_password" {
 
 variable "app_security_group_id" {
 }
+
+variable "django_key" {
+}
