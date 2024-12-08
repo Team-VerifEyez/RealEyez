@@ -52,6 +52,8 @@ pipeline {
                 echo 'Running SonarQube analysis...'
                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONARQUBE_TOKEN')]) {
                     sh """
+                         export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+                         export PATH=\$JAVA_HOME/bin:\$PATH
                         /opt/sonar-scanner/bin/sonar-scanner -Dsonar.projectKey=${SONARQUBE_PROJECT_KEY} -Dsonar.projectName=${SONARQUBE_PROJECT_NAME} -Dsonar.sources=./detection,./RealVsAI -Dsonar.host.url=${SONARQUBE_HOST_URL} -Dsonar.login=${SONARQUBE_TOKEN}
                     """
                 }
