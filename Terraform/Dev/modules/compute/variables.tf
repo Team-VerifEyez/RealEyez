@@ -37,3 +37,16 @@ variable "dockerhub_password" {
 
 variable "app_security_group_id" {
 }
+
+variable "default_vpc_id" {
+  description = "The default Vpc ID"
+  type = string
+  default = "vpc-032011d00cb9f7c50"
+}
+
+variable "default_subnet_id" {
+  description = "The default Subnet ID"
+  type = string
+  default = "subnet-054c80d005b955d6c"
+}
+
