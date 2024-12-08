@@ -222,22 +222,6 @@ resource "aws_security_group" "monitoring_sg" {
 }
 
 
-
-
-
-####################################################
-## Updating Prometheus YML
-####################################################
-resource "aws_instance" "monitoring" {
-  # Other properties
-  user_data = <<EOF
-#!/bin/bash
-echo '${data.template_file.prometheus_config.rendered}' > sudo docker exec -it prometheus cat /etc/prometheus/prometheus.yml
-docker restart prometheus
-EOF
-}
-
-
 # Create Security Group for the Load Balancer
 resource "aws_security_group" "lb_sg" {
   name        = "lb_sg"
