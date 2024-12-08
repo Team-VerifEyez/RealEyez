@@ -92,7 +92,7 @@ pipeline {
                     if (highAlerts.isEmpty()) {
                         echo "No high-risk vulnerabilities found. Proceeding with the pipeline."
                     } else {
-                        echo "High-risk vulnerabilities detected. Failing the pipeline:"
+                        echo "High-risk vulnerabilities detected. Failing the pipeline!:"
                         highAlerts.each { alert ->
                             echo "- ${alert.name}: ${alert.description}"
                         }
