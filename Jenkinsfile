@@ -10,7 +10,8 @@ pipeline {
 
         // Terraform credentials
 	DOCKER_CREDS = credentials('dockerhub-credentials')
-        DB_PASSWORD = credentials('db-password')
+        RDS_PASSWORD = credentials('RDS_PASSWORD')
+	DJANGO_KEY  = credential('DJANGO_KEY')    
     }
     
     stages {
