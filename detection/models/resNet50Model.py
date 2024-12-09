@@ -3,14 +3,13 @@ import math
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Flatten, Dropout, BatchNormalization, Activation
-from tensorflow.keras.applications import ResNet50
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout, BatchNormalization, Activation
+from tensorflow.keras.applications import EfficientNetB0  # EfficientNetB0 for lightweight efficiency
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.mixed_precision import set_global_policy
-from tensorflow.keras import backend as K
 
-# Enable mixed precision training for speed and memory efficiency
+# Enable Mixed Precision Training for Faster Performance
 set_global_policy('mixed_float16')
 
 # Enable GPU Memory Growth
@@ -23,15 +22,15 @@ if gpus:
     except RuntimeError as e:
         print("Memory growth failed:", e)
 
-# **Load Pre-Trained ResNet50 Base Model**
-# Pretrained on ImageNet
-base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(256, 256, 3))
+# **Load Pre-Trained EfficientNetB0 Model**
+# Pretrained on ImageNet, without the top classifier layer
+base_model = EfficientNetB0(weights='imagenet', include_top=False, input_shape=(256, 256, 3))
 
 # **Add Classification Layers**
 x = base_model.output
-x = GlobalAveragePooling2D()(x)  # Reduce 7x7x2048 output to 2048
+x = GlobalAveragePooling2D()(x)  # Reduces dimensionality
 
-# Add custom dense layers with dropout and L2 regularization
+# Add custom dense layers
 x = Dense(256, kernel_regularizer=tf.keras.regularizers.l2(0.001))(x)
 x = BatchNormalization()(x)
 x = Activation('relu')(x)
@@ -42,18 +41,17 @@ x = BatchNormalization()(x)
 x = Activation('relu')(x)
 x = Dropout(0.3)(x)
 
-# **Output Layer**
-# Sigmoid for binary classification (Real vs. Fake)
+# **Output Layer for Binary Classification**
 x = Dense(1, activation='sigmoid')(x)
 
-# **Unfreeze Last 15 Layers of ResNet50 for Fine-Tuning**
-for layer in base_model.layers[-15:]:
+# **Fine-Tune EfficientNetB0's Last Layers**
+for layer in base_model.layers[-20:]:  # Unfreeze last 20 layers
     layer.trainable = True
 
 # **Compile the Model**
 model = Model(inputs=base_model.input, outputs=x)
 
-# Exponential decay for learning rate
+# Learning Rate Scheduling
 initial_learning_rate = 1e-5
 lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
     initial_learning_rate=initial_learning_rate,
@@ -68,25 +66,22 @@ model.compile(
     metrics=['accuracy']
 )
 
-# **Data Augmentation and Data Generators**
-batch_size = 32  # Reduced batch size for memory optimization
+# **Data Augmentation & Data Generators**
+batch_size = 32  # Adjust batch size if memory runs out
 
-# Training Data Generator
 train_datagen = ImageDataGenerator(
     rescale=1./255,
     rotation_range=15,
-    width_shift_range=0.2,  # Less aggressive shifts
+    width_shift_range=0.2,
     height_shift_range=0.2,
     horizontal_flip=True,
     zoom_range=0.2,
     fill_mode='nearest'
 )
 
-# Validation and Test Data Generators
 val_datagen = ImageDataGenerator(rescale=1./255)
 test_datagen = ImageDataGenerator(rescale=1./255)
 
-# Load the data from directories
 train_generator = train_datagen.flow_from_directory(
     '/home/ubuntu/real_vs_fake/real-vs-fake/train',
     target_size=(256, 256),
@@ -134,7 +129,7 @@ test_dataset = tf.data.Dataset.from_generator(
 # **Define Callbacks**
 callbacks = [
     EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True, verbose=1),
-    ModelCheckpoint('best_model.keras', monitor='val_loss', save_best_only=True, verbose=1),
+    ModelCheckpoint('best_efficientnet_model.keras', monitor='val_loss', save_best_only=True, verbose=1),
     ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, min_lr=1e-7, verbose=1)
 ]
 
@@ -149,14 +144,15 @@ history = model.fit(
 )
 
 # **Save the Trained Model**
-model.save('/home/ubuntu/RealEyez/detection/models/resNetModel.keras')
+model.save('/home/ubuntu/RealEyez/detection/models/efficientnet_model_two.keras', include_optimizer=False)
 
 # **Inference on Test Data**
 from tensorflow.keras.models import load_model
-import os
 
 # Load the saved model
-loaded_model = load_model('/home/ubuntu/RealEyez/detection/models/resNetModel.keras')
+loaded_model = load_model('/home/ubuntu/RealEyez/detection/models/efficientnet_model_two.keras')
+
+
 
 # Evaluate each test image
 test_dir = '/home/ubuntu/real_vs_fake/real-vs-fake/test'
@@ -175,3 +171,7 @@ for root, dirs, files in os.walk(test_dir):
             print(f"Image: {test_image_path}")
             print(f"Prediction: {result} (confidence: {confidence:.2%})")
             print("---")
+
+# Evaluate the model
+loss, accuracy = loaded_model.evaluate(test_generator)
+print(f"Test Accuracy: {accuracy:.2f}")
