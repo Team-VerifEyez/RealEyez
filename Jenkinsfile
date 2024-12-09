@@ -19,12 +19,14 @@ pipeline {
                 echo 'This pipeline is running on the main branch.'
             }
         }
+
         stage('Infrastructure Security - Checkov') {
             when {
                 expression { params.RUN_CHECKOV }
             }
             steps {
                 script {
+                    // Create the reports directory in Jenkins workspace if it doesn't exist
                     sh "mkdir -p ${REPORTS_DIR}"
 
                     try {
@@ -43,18 +45,26 @@ pipeline {
                             deactivate
                         """
                     } catch (Exception e) {
+                        // Catch errors and mark the build as unstable without stopping the pipeline
                         echo "Checkov scan failed: ${e}"
-                        // Instead of failing the pipeline, mark it as unstable
                         currentBuild.result = 'UNSTABLE'
                         echo "Pipeline continues even after Checkov failure."
                     }
 
                     // Ensure the file exists before reading
                     if (fileExists("${REPORTS_DIR}/checkov_report.json")) {
+                        // Read and parse the Checkov report
                         def checkovReport = readJSON file: "${REPORTS_DIR}/checkov_report.json"
                         def highSeverityIssues = checkovReport.results.failed_checks.findAll { 
                             it.severity in ['HIGH', 'CRITICAL'] 
                         }
+
+                        // Save and print the full Checkov report in the Jenkins workspace
+                        echo "Checkov Scan Report: Saving to workspace report directory"
+                        sh "cat ${REPORTS_DIR}/checkov_report.json"
+
+                        // Archive the report file in Jenkins
+                        archiveArtifacts artifacts: "${REPORTS_DIR}/checkov_report.json", allowEmptyArchive: true
 
                         if (highSeverityIssues) {
                             echo "High severity issues found: ${highSeverityIssues.size()}"
@@ -75,6 +85,7 @@ pipeline {
             }
         }
 
+
         // Other stages can remain commented out or can be skipped conditionally
         stage('Cleanup Virtual Environment') {
             when {
@@ -87,7 +98,6 @@ pipeline {
                 '''
             }
         }
-
     }
 
     post {
