@@ -11,6 +11,7 @@ pipeline {
     }
 
     stages {
+        // SonarQube Analysis Stage to perform code quality and static analysis
         stage('SonarQube Analysis') {
             when { branch 'main' }
             steps {
@@ -29,7 +30,8 @@ pipeline {
                 }
             }
         }
-
+        
+        // Branch Validation Stage to ensure the pipeline runs only on the main branch
         stage('Check Branch') {
             when {
                 expression { env.BRANCH_NAME == 'main' }
@@ -39,6 +41,7 @@ pipeline {
             }
         }
 
+        // Cleanup Stage to remove temporary and unused resources
         stage('Cleanup') {
             steps {
             sh '''
@@ -49,6 +52,7 @@ pipeline {
       }
     }
 
+        // Pull Docker Image Stage to retrieve the latest application image
         stage('Pull Image') {
             when { branch 'main' }
             steps {
@@ -57,7 +61,7 @@ pipeline {
             }
         }
 
-        // Trivy Scan Stage to scan app image
+        // Trivy Scan Stage to scan the application image for vulnerabilities
         stage('Security Scan - Trivy') {
             when { branch 'main' }
             steps {
@@ -109,7 +113,7 @@ pipeline {
             }
         }
 
-
+        // Docker Container Run Stage to start the application container
         stage('Run Docker Container') {
             when { branch 'main' }
             steps {
@@ -122,6 +126,7 @@ pipeline {
             } 
         }
 
+        // OWASP ZAP Scan Stage to perform dynamic security analysis
         stage('Dynamic Security Analysis - OWASP ZAP') {
             when { branch 'main' }
             steps {
@@ -165,6 +170,7 @@ pipeline {
             }
         }
 
+        // Disk Cleanup Stage to remove unused Docker resources
         stage('Clean Up Disk Space') {
             steps {
                 echo 'Cleaning up unused Docker resources to free up space...'
@@ -176,8 +182,7 @@ pipeline {
             }
         }
 
-
-
+        // Terraform Plan Stage to prepare infrastructure for deployment
         stage('Terraform Plan') {
             steps {
                 dir('Terraform/Dev') {
@@ -203,8 +208,7 @@ pipeline {
             }
         }
         
-    
-
+        // Infrastructure Security Stage to analyze Terraform and Kubernetes code with Checkov
         stage('Infrastructure Security - Checkov') {
                     steps {
                         script {
@@ -267,6 +271,7 @@ pipeline {
                     }
                 }
 
+        // Virtual Environment Cleanup Stage to remove Python virtual environment
         stage('Cleanup Virtual Environment') {
             steps {
                 sh '''
