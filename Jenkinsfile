@@ -139,7 +139,7 @@ pipeline {
                             pip install --upgrade pip
                             pip install checkov
                             checkov \
-                                --directory ${WORKSPACE}/Terraform/Dev \  # Points to the app code
+                                --directory ${WORKSPACE}/Terraform/Dev   # Points to the app code
                                 --output json \
                                 --output-file-path ${REPORTS_DIR}/checkov_report.json \
                                 --framework terraform,kubernetes \
