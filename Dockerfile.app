@@ -10,6 +10,8 @@ COPY ./RealVsAI/entrypoint.sh /app/entrypoint.sh
 
 RUN chmod +x /app/entrypoint.sh
 
+ENV DJANGO_KEY "your-secret-key"
+
 EXPOSE 8000
 
 ENTRYPOINT ["./entrypoint.sh"]
