@@ -56,28 +56,10 @@ pipeline {
         stage('Pull Image') {
             when { branch 'main' }
             steps {
-                echo 'Pulling images concurrently...'
-                script {
-                    sh """
-                        # Check and pull the joedhub/owasp_realeyez image only if not already cached
-                        if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q '^joedhub/owasp_realeyez:latest$'; then
-                            echo "Image joedhub/owasp_realeyez:latest not found locally. Pulling it..."
-                            docker pull joedhub/owasp_realeyez:latest &
-                        else
-                            echo "Image joedhub/owasp_realeyez:latest already exists locally. Skipping pull."
-                        fi
-                        
-                        # Always pull the OWASP ZAP image in the background
-                        docker pull ghcr.io/zaproxy/zaproxy:stable &
-                        
-                        # Wait for all background tasks to finish
-                        wait
-                    """
-                }
+                echo 'Pulling image...'
+                sh 'docker pull joedhub/owasp_realeyez:latest'
             }
         }
-
-
 
         // Trivy Scan Stage to scan the application image for vulnerabilities
         stage('Security Scan - Trivy') {
@@ -152,6 +134,8 @@ pipeline {
             when { branch 'main' }
             steps {
                 script {
+                    sh "docker pull ghcr.io/zaproxy/zaproxy:stable"
+
                     try { 
                         echo 'Running ZAP Scan...'
                         sh """
