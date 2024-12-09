@@ -193,7 +193,6 @@ pipeline {
                 echo 'Cleaning up unused Docker resources to free up space...'
                 sh '''
                     docker stop owasp_realeyez || true
-                    docker rm owasp_realeyez || true
                     docker system prune -af || true
                 '''
             }
