@@ -58,7 +58,7 @@ pipeline {
             steps {
                 echo 'Pulling images concurrently...'
                 script {
-                    sh """
+                    sh '''
                         # Check and pull the joedhub/owasp_realeyez image only if not already cached
                         if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q '^joedhub/owasp_realeyez:latest$'; then
                             echo "Image joedhub/owasp_realeyez:latest not found locally. Pulling it..."
@@ -72,10 +72,11 @@ pipeline {
                         
                         # Wait for all background tasks to finish
                         wait
-                    """
+                    '''
                 }
             }
         }
+
 
 
 
