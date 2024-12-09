@@ -34,7 +34,7 @@ pipeline {
                     """
                 }
             }
-        }
+        
 
         // Further stages...
         
