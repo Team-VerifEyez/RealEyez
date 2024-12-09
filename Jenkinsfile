@@ -29,19 +29,11 @@ pipeline {
                             --format json \
                             --severity HIGH,CRITICAL \
                             joedhub/owasp_realeyez:latest > ${REPORTS_DIR}/trivy_report.json
-
-                        # Display human-readable summary with counts
-                        echo "=== Vulnerability Summary ==="
-                        docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            aquasec/trivy:latest image \
-                            --format table \
-                            --severity HIGH,CRITICAL \
-                            joedhub/owasp_realeyez:latest
+                        
                     """
                     
                     // Archive the detailed report
-                    archiveArtifacts artifacts: "${REPORTS_DIR}/trivy_report.json"
+                    archiveArtifacts artifacts: 'reports/trivy_report.json'
                 }
             }
         
