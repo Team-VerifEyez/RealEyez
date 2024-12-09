@@ -29,8 +29,7 @@ pipeline {
                             -v ${REPORTS_DIR}:${REPORTS_DIR} \
                             aquasec/trivy:latest \
                             --format json \
-                            -o ${REPORTS_DIR}/trivy_report.json \
-                            joedhub/owasp_realeyez:latest
+                            joedhub/owasp_realeyez:latest > ${REPORTS_DIR}/trivy_report.json
                     """
                 }
             }
