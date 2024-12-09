@@ -77,9 +77,6 @@ pipeline {
             }
         }
 
-
-
-
         // Trivy Scan Stage to scan the application image for vulnerabilities
         stage('Security Scan - Trivy') {
             when { branch 'main' }
