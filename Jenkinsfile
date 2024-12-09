@@ -135,7 +135,7 @@ pipeline {
                     try {
                         sh """
                             python3 -m venv checkov_env
-                            source checkov-env/bin/activate  # Use absolute path if needed
+                            . checkov-env/bin/activate  # Use absolute path if needed
                             pip install --upgrade pip
                             pip install checkov
                             checkov \
