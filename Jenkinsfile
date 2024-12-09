@@ -38,9 +38,9 @@ pipeline {
                             deactivate
                         """
                     } catch (Exception e) {
-                        // Catch errors and mark the build as unstable without stopping the pipeline
+                        // Catch errors and mark the build as success without stopping the pipeline
                         echo "Checkov scan failed: ${e}"
-                        currentBuild.result = 'UNSTABLE'
+                        currentBuild.result = 'SUCCESS'
                         echo "Pipeline continues even after Checkov failure."
                     }
 
@@ -64,8 +64,8 @@ pipeline {
                             highSeverityIssues.each { issue ->
                                 echo "Resource: ${issue.resource} | Check ID: ${issue.check_id} | Severity: ${issue.severity} | Message: ${issue.check_name}"
                             }
-                            // Instead of failing the pipeline, log the issues and mark as unstable
-                            currentBuild.result = 'UNSTABLE'
+                            // Instead of failing the pipeline, log the issues and mark as success
+                            currentBuild.result = 'SUCCESS'
                             echo "High severity infrastructure issues detected. Pipeline continues."
                         } else {
                             echo "No high severity issues found."

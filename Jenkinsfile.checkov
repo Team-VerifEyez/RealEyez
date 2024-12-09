@@ -1,10 +1,6 @@
 pipeline {
     agent { label 'build-node' }
 
-    parameters {
-        booleanParam(name: 'RUN_CHECKOV', defaultValue: true, description: 'Run Checkov stage')
-    }
-
     environment {
         REPORTS_DIR = "${WORKSPACE}/reports"
         DJANGO_KEY = credentials('DJANGO_KEY')
@@ -21,9 +17,6 @@ pipeline {
         }
 
         stage('Infrastructure Security - Checkov') {
-            when {
-                expression { params.RUN_CHECKOV }
-            }
             steps {
                 script {
                     // Create the reports directory in Jenkins workspace if it doesn't exist
@@ -85,12 +78,7 @@ pipeline {
             }
         }
 
-
-        // Other stages can remain commented out or can be skipped conditionally
         stage('Cleanup Virtual Environment') {
-            when {
-                expression { params.RUN_CHECKOV }
-            }
             steps {
                 sh '''
                     echo "Removing Python virtual environment..."
