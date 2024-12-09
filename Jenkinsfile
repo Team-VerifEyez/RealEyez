@@ -33,7 +33,7 @@ pipeline {
                     """
                     
                     // Archive the detailed report
-                    archiveArtifacts artifacts: 'reports/trivy_report.json'
+                    archiveArtifacts artifacts: '${REPORTS_DIR}/trivy_report.json'
                 }
             }
         
