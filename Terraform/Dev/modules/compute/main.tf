@@ -104,6 +104,7 @@ resource "aws_instance" "realeyez_app_az2"{
     docker_pass = var.dockerhub_password,
     docker_compose = templatefile("./compose.yml", {
       rds_endpoint = var.rds_endpoint
+      django_key = var.django_key
       run_migrations = "false"
     })
   }))

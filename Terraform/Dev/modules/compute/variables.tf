@@ -39,7 +39,10 @@ variable "app_security_group_id" {
 }
 
 variable "django_key" {
+  description = "Django secret key"
+  type        = string
 }
+
 variable "default_vpc_id" {
   description = "The default Vpc ID"
   type = string
