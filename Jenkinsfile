@@ -69,12 +69,13 @@ pipeline {
                         # Save detailed report to JSON file
                         docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v ${REPORTS_DIR}:${REPORTS_DIR} \
+                            -v $HOME/.trivy:/root/.cache/trivy \
                             aquasec/trivy:latest image \
                             --format json \
+                            --quiet \
+                            --scanners vuln \
                             --severity HIGH,CRITICAL \
                             joedhub/owasp_realeyez:latest > ${REPORTS_DIR}/trivy_report.json
-                        
                     """
                     
                     // Archive the detailed report
