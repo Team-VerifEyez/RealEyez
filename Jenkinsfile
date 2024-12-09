@@ -27,6 +27,7 @@ pipeline {
                             -v ${REPORTS_DIR}:${REPORTS_DIR} \
                             aquasec/trivy:latest image \
                             --format json \
+                            --scanners vuln \
                             --severity HIGH,CRITICAL \
                             joedhub/owasp_realeyez:latest > ${REPORTS_DIR}/trivy_report.json
                         
