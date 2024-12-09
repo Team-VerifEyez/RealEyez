@@ -34,35 +34,33 @@ pipeline {
                     """
                 }
             }
-        
-
-        // Further stages...
-        
-        // Post-stage for security issues handling
-        post {
-            failure {
-                script {
-                    if (fileExists("${REPORTS_DIR}/trivy_report.json")) {
-                        def trivyReport = readJSON file: "${REPORTS_DIR}/trivy_report.json"
-                        def highSeverityIssues = trivyReport.findAll { 
-                            it.Severity in ['HIGH', 'CRITICAL']
-                        }
-
-                        if (highSeverityIssues) {
-                            echo "High-severity vulnerabilities detected:"
-                            highSeverityIssues.each { issue ->
-                                echo "Vulnerability: ${issue.VulnerabilityID} | Severity: ${issue.Severity} | Package: ${issue.PkgName}"
+            post {
+                failure {
+                    script {
+                        if (fileExists("${REPORTS_DIR}/trivy_report.json")) {
+                            def trivyReport = readJSON file: "${REPORTS_DIR}/trivy_report.json"
+                            def highSeverityIssues = trivyReport.findAll { 
+                                it.Severity in ['HIGH', 'CRITICAL']
                             }
-                            error "Trivy scan found high-severity vulnerabilities."
+
+                            if (highSeverityIssues) {
+                                echo "High-severity vulnerabilities detected:"
+                                highSeverityIssues.each { issue ->
+                                    echo "Vulnerability: ${issue.VulnerabilityID} | Severity: ${issue.Severity} | Package: ${issue.PkgName}"
+                                }
+                                error "Trivy scan found high-severity vulnerabilities."
+                            } else {
+                                echo "No high-severity vulnerabilities found in Trivy scan."
+                            }
                         } else {
-                            echo "No high-severity vulnerabilities found in Trivy scan."
+                            error "Trivy scan report not found."
                         }
-                    } else {
-                        error "Trivy scan report not found."
                     }
                 }
             }
         }
+
+        // Further stages...
     }
 
     post {
