@@ -28,8 +28,9 @@ pipeline {
                             -v /var/run/docker.sock:/var/run/docker.sock \
                             -v ${REPORTS_DIR}:${REPORTS_DIR} \
                             aquasec/trivy:latest \
+                            image \
                             --format json \
-                            joedhub/owasp_realeyez:latest > ${REPORTS_DIR}/trivy_report.json
+                            joedhub/owasp_realeyez:latest > ${REPORTS_DIR}/trivy_report.json 
                     """
                 }
             }
