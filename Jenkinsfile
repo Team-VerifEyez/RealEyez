@@ -28,7 +28,7 @@ pipeline {
                             aquasec/trivy:latest image \
                             --format json \
                             --scanners vuln \
-                            --timeout 20m
+                            --timeout 20m \
                             --severity HIGH,CRITICAL \
                             joedhub/owasp_realeyez:latest > ${REPORTS_DIR}/trivy_report.json
                         
