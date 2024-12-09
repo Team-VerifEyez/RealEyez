@@ -3,32 +3,32 @@ pipeline {
 
     environment {
         REPORTS_DIR = "${WORKSPACE}/reports"
-        SONARQUBE_PROJECT_KEY = 'realeyez'   
-        SONARQUBE_PROJECT_NAME = 'realeyez'         
-        SONARQUBE_HOST_URL = 'http://172.31.40.40:9001'  
-        SONARQUBE_LOGIN = credentials('sonarqube-token')  
+        // SONARQUBE_PROJECT_KEY = 'realeyez'   
+        // SONARQUBE_PROJECT_NAME = 'realeyez'         
+        // SONARQUBE_HOST_URL = 'http://172.31.40.40:9001'  
+        // SONARQUBE_LOGIN = credentials('sonarqube-token')  
         DJANGO_KEY = credentials('DJANGO_KEY')
     }
 
-    stages {
-        stage('SonarQube Analysis') {
-            when { branch 'main' }
-            steps {
-                echo 'Running SonarQube analysis...'
-                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONARQUBE_TOKEN')]) {
-                    sh """
-                        export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-                        export PATH=\$JAVA_HOME/bin:\$PATH
-                        /opt/sonar-scanner/bin/sonar-scanner \
-                            -Dsonar.projectKey=${SONARQUBE_PROJECT_KEY} \
-                            -Dsonar.projectName=${SONARQUBE_PROJECT_NAME} \
-                            -Dsonar.sources=./detection,./RealVsAI \
-                            -Dsonar.host.url=${SONARQUBE_HOST_URL} \
-                            -Dsonar.login=${SONARQUBE_TOKEN}
-                    """
-                }
-            }
-        }
+    // stages {
+    //     stage('SonarQube Analysis') {
+    //         when { branch 'main' }
+    //         steps {
+    //             echo 'Running SonarQube analysis...'
+    //             withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONARQUBE_TOKEN')]) {
+    //                 sh """
+    //                     export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+    //                     export PATH=\$JAVA_HOME/bin:\$PATH
+    //                     /opt/sonar-scanner/bin/sonar-scanner \
+    //                         -Dsonar.projectKey=${SONARQUBE_PROJECT_KEY} \
+    //                         -Dsonar.projectName=${SONARQUBE_PROJECT_NAME} \
+    //                         -Dsonar.sources=./detection,./RealVsAI \
+    //                         -Dsonar.host.url=${SONARQUBE_HOST_URL} \
+    //                         -Dsonar.login=${SONARQUBE_TOKEN}
+    //                 """
+    //             }
+    //         }
+    //     }
 
         stage('Check Branch') {
             when {
@@ -39,90 +39,90 @@ pipeline {
             }
         }
 
-        stage('Cleanup') {
-            steps {
-            sh '''
-                echo "Performing in-pipeline cleanup after Test..."
-                docker system prune -f
-                git clean -ffdx -e ".tfstate" -e ".terraform/*"
-            '''
-      }
-    }
+    //     stage('Cleanup') {
+    //         steps {
+    //         sh '''
+    //             echo "Performing in-pipeline cleanup after Test..."
+    //             docker system prune -f
+    //             git clean -ffdx -e ".tfstate" -e ".terraform/*"
+    //         '''
+    //   }
+    // }
 
-        stage('Pull Image') {
-            when { branch 'main' }
-            steps {
-                echo 'Pulling image...'
-                sh 'docker pull joedhub/owasp_realeyez:latest'
-            }
-        }
+    //     stage('Pull Image') {
+    //         when { branch 'main' }
+    //         steps {
+    //             echo 'Pulling image...'
+    //             sh 'docker pull joedhub/owasp_realeyez:latest'
+    //         }
+    //     }
 
-        stage('Run Docker Container') {
-            when { branch 'main' }
-            steps {
-                echo 'Running the Docker container...'
-                withCredentials([string(credentialsId: 'DJANGO_KEY', variable: 'DJANGO_KEY')]) {
-                sh '''
-                    docker run -d --name owasp_realeyez -p 8000:8000 -e DJANGO_KEY=${DJANGO_KEY} joedhub/owasp_realeyez:latest
-                '''
-            }
-            } 
-        }
+    //     stage('Run Docker Container') {
+    //         when { branch 'main' }
+    //         steps {
+    //             echo 'Running the Docker container...'
+    //             withCredentials([string(credentialsId: 'DJANGO_KEY', variable: 'DJANGO_KEY')]) {
+    //             sh '''
+    //                 docker run -d --name owasp_realeyez -p 8000:8000 -e DJANGO_KEY=${DJANGO_KEY} joedhub/owasp_realeyez:latest
+    //             '''
+    //         }
+    //         } 
+    //     }
 
-        stage('Dynamic Security Analysis - OWASP ZAP') {
-            when { branch 'main' }
-            steps {
-                script {
-                    sh "mkdir -p ${REPORTS_DIR}"
-                    sh "docker pull ghcr.io/zaproxy/zaproxy:stable"
+    //     stage('Dynamic Security Analysis - OWASP ZAP') {
+    //         when { branch 'main' }
+    //         steps {
+    //             script {
+    //                 sh "mkdir -p ${REPORTS_DIR}"
+    //                 sh "docker pull ghcr.io/zaproxy/zaproxy:stable"
 
-                    try { 
-                        echo 'Running ZAP Scan...'
-                        sh """
-                            docker run --rm \
-                                -v ${REPORTS_DIR}:/zap/wrk/:rw \
-                                --network="host" \
-                                ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-                                -t http://localhost:8000 \
-                                -J zap_scan_results.json \
-                                -m 10 \
-                                --auto || true
-                        """
-                    } catch (Exception e) {
-                        echo "Error during ZAP scan: ${e.message}"
-                        error 'OWASP ZAP scan failed.'
-                    }
+    //                 try { 
+    //                     echo 'Running ZAP Scan...'
+    //                     sh """
+    //                         docker run --rm \
+    //                             -v ${REPORTS_DIR}:/zap/wrk/:rw \
+    //                             --network="host" \
+    //                             ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+    //                             -t http://localhost:8000 \
+    //                             -J zap_scan_results.json \
+    //                             -m 10 \
+    //                             --auto || true
+    //                     """
+    //                 } catch (Exception e) {
+    //                     echo "Error during ZAP scan: ${e.message}"
+    //                     error 'OWASP ZAP scan failed.'
+    //                 }
 
-                    def zapReport = readJSON file: "${REPORTS_DIR}/zap_scan_results.json"
-                    def highAlerts = zapReport.site.collectMany { site ->
-                        site.alerts.findAll { alert -> (alert.riskcode as int) >= 3 }
-                    }
+    //                 def zapReport = readJSON file: "${REPORTS_DIR}/zap_scan_results.json"
+    //                 def highAlerts = zapReport.site.collectMany { site ->
+    //                     site.alerts.findAll { alert -> (alert.riskcode as int) >= 3 }
+    //                 }
 
-                    if (highAlerts.isEmpty()) {
-                        echo "No high-risk vulnerabilities found. Proceeding with the pipeline."
-                    } else {
-                        echo "High-risk vulnerabilities detected. Failing the pipeline!"
-                        highAlerts.each { alert ->
-                            echo "- ${alert.name}: ${alert.description}"
-                        }
-                        error 'High-risk vulnerabilities found during OWASP ZAP scan.'
-                    }
+    //                 if (highAlerts.isEmpty()) {
+    //                     echo "No high-risk vulnerabilities found. Proceeding with the pipeline."
+    //                 } else {
+    //                     echo "High-risk vulnerabilities detected. Failing the pipeline!"
+    //                     highAlerts.each { alert ->
+    //                         echo "- ${alert.name}: ${alert.description}"
+    //                     }
+    //                     error 'High-risk vulnerabilities found during OWASP ZAP scan.'
+    //                 }
 
-                    sh "docker rmi ghcr.io/zaproxy/zaproxy:stable"
-                }
-            }
-        }
+    //                 sh "docker rmi ghcr.io/zaproxy/zaproxy:stable"
+    //             }
+    //         }
+    //     }
 
-        stage('Clean Up Disk Space') {
-            steps {
-                echo 'Cleaning up unused Docker resources to free up space...'
-                sh '''
-                    docker stop owasp_realeyez || true
-                    docker rm owasp_realeyez || true
-                    docker system prune -af || true
-                '''
-            }
-        }
+    //     stage('Clean Up Disk Space') {
+    //         steps {
+    //             echo 'Cleaning up unused Docker resources to free up space...'
+    //             sh '''
+    //                 docker stop owasp_realeyez || true
+    //                 docker rm owasp_realeyez || true
+    //                 docker system prune -af || true
+    //             '''
+    //         }
+    //     }
 
  
 
@@ -135,7 +135,7 @@ pipeline {
                     try {
                         sh """
                             python3 -m venv checkov_env
-                            . checkov-env/bin/activate  # Use absolute path if needed
+                            . checkov_env/bin/activate  # Use absolute path if needed
                             pip install --upgrade pip
                             pip install checkov
                             checkov \
