@@ -25,7 +25,7 @@ TEMP_DIR = os.path.join(BASE_DIR, 'templates')
 SECRET_KEY = os.environ['DJANGO_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = FALSE
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
