@@ -1,4 +1,3 @@
-
 # Define an RDS PostgreSQL database instance
 resource "aws_db_instance" "postgres_db" {
   identifier           = "realeyez-db"
@@ -14,12 +13,34 @@ resource "aws_db_instance" "postgres_db" {
   multi_az             = false  # Enable Multi-AZ failover
   skip_final_snapshot  = true
 
+  # Encryption configuration
+  storage_encrypted   = true
+  # Optional: Use a custom KMS key instead of AWS default key
+  kms_key_id         = aws_kms_key.rds_encryption_key.arn
+
   db_subnet_group_name   = aws_db_subnet_group.rds_subgroup.name
   vpc_security_group_ids = [aws_security_group.sg_for_rds.id]
 
   tags = {
     Name = "Realeyez Postgres DB"
   }
+}
+
+# Create a KMS key for RDS encryption
+resource "aws_kms_key" "rds_encryption_key" {
+  description             = "KMS key for RDS encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "rds-encryption-key"
+  }
+}
+
+# Create an alias for the KMS key
+resource "aws_kms_alias" "rds_encryption_key_alias" {
+  name          = "alias/realeyez-rds-key"
+  target_key_id = aws_kms_key.rds_encryption_key.key_id
 }
 
 # Define a subnet group for RDS (The subnet id's will be private_subnet_id_2_az1 and private_subnet_id_2_az2)
