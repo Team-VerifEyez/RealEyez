@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    image: joedhub/realeyez-app-2
+    image: joedhub/realeyez-test
     container_name: realeyez
     environment:
       - DB_HOST=${rds_endpoint}
