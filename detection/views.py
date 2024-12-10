@@ -10,29 +10,36 @@ from .models import Image  # Assuming the ImageSlider model exists
 from django.contrib.auth import authenticate, login, logout
 from tensorflow.keras.models import load_model  # type: ignore
 from tensorflow.keras.applications.efficientnet import preprocess_input  # type: ignore
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+
 import numpy as np
 from PIL import Image  # Correct import for handling images
 import os
 
 # Load model once during server startup
-MODEL_PATH = os.path.join('detection', 'models', 'ai_vs_real_model.keras')
+MODEL_PATH = os.path.join('detection', 'models', 'real_vs_fake_classifier.h5')
 model = load_model(MODEL_PATH)
 
 def predict_image(image):
     # Open the image and ensure RGB
-    img = Image.open(image).convert("RGB")
+    # img = Image.open(image).convert("RGB")
     
     # Resize the image to the expected size for EfficientNet
-    img = img.resize((224, 224))
+    # img = img.resize((224, 224))
     
     # Convert the image to a NumPy array
-    img_array = np.array(img)
+    # img_array = np.array(img)
     
     # Add batch dimension
-    img_array = np.expand_dims(img_array, axis=0)
+    # img_array = np.expand_dims(img_array, axis=0)
     
     # Preprocess the image
-    img_array = preprocess_input(img_array)
+    # img_array = preprocess_input(img_array)
+
+    img = load_img(image, target_size=(224, 224))
+    img_array = img_to_array(img)
+    img_array = img_array / 255.0  # Normalize pixel values
+    img_array = np.expand_dims(img_array, axis=0)
 
     # Make predictions
     prediction = model.predict(img_array)
