@@ -342,7 +342,7 @@ pipeline {
     } // Ensure this closing brace matches the 'stages' block
     post {
         success {
-            echo 'Application is running.'
+            echo 'Infrastructure has been destroyed. Your application is no longer running.'
         }
         failure {
             echo 'Pipeline failed. Check the logs for details.'
