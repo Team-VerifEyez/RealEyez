@@ -296,10 +296,28 @@ pipeline {
                 '''
             }
         }
-    }
+
+        stage('Apply and Cleanup') {
+            steps {
+                dir('Terraform/Dev') {
+                    script {
+                        // Apply the Terraform plan
+                        sh 'terraform apply plan.tfplan'
+
+                        // Wait for services to start
+                        echo 'Waiting 10 minutes for services to initialize...'
+                        sleep(time: 10, unit: 'MINUTES')
+
+                        // Cleanup resources
+                        echo 'Cleaning up Terraform infrastructure...'
+                        sh 'terraform destroy -auto-approve'
+                    }
+                }
+            }
+        }
     post {
         success {
-            echo 'Application is running. Access it at http://<your-ip>:8000.'
+            echo 'Application is running.'
         }
         failure {
             echo 'Pipeline failed. Check the logs for details.'
