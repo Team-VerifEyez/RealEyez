@@ -76,6 +76,7 @@ resource "aws_instance" "realeyez_app_az1"{
       rds_endpoint = var.rds_endpoint
       django_key = var.django_key
       run_migrations = "true"
+      db_password = var.db_password
     })
   }))
 
@@ -106,6 +107,7 @@ resource "aws_instance" "realeyez_app_az2"{
       rds_endpoint = var.rds_endpoint
       django_key = var.django_key
       run_migrations = "false"
+      db_password = var.db_password
     })
   }))
 

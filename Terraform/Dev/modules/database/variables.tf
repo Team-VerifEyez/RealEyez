@@ -18,7 +18,6 @@ variable "db_username" {
 variable "db_password" {
     description = "password for db user"
     type = string
-    default = "abcd1234"
 }
 
 variable "vpc_id" {

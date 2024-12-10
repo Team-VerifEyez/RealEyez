@@ -55,3 +55,7 @@ variable "default_subnet_id" {
   default = "subnet-054c80d005b955d6c"
 }
 
+variable "db_password" {
+    description = "password for db user"
+    type = string
+}

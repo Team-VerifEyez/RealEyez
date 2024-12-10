@@ -8,5 +8,6 @@ services:
       - DB_HOST=${rds_endpoint}
       - RUN_MIGRATIONS=${run_migrations}
       - DJANGO_KEY=${django_key}
+      - RDS_PASSWORD=${db_password}
     ports:
         - "8000:8000"

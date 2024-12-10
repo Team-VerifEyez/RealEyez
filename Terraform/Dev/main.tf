@@ -38,5 +38,6 @@ module "EC2" {
   dockerhub_username = var.dockerhub_username
   dockerhub_password = var.dockerhub_password
   django_key = var.django_key
+  db_password = var.db_password
 }
 
