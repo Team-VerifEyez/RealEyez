@@ -296,13 +296,13 @@ pipeline {
                 '''
             }
         }
-
+        // Automating Terraform Apply and Cleanup
         stage('Apply and Cleanup') {
             steps {
                 dir('Terraform/Dev') {
                     script {
                         // Apply the Terraform plan
-                        sh 'terraform apply plan.tfplan'
+                        sh 'terraform apply tfplan'
 
                         // Wait for services to start
                         echo 'Waiting 10 minutes for services to initialize...'
@@ -315,6 +315,7 @@ pipeline {
                 }
             }
         }
+    } // Ensure this closing brace matches the 'stages' block
     post {
         success {
             echo 'Application is running.'
@@ -323,5 +324,4 @@ pipeline {
             echo 'Pipeline failed. Check the logs for details.'
         }
     }
-}
 }
