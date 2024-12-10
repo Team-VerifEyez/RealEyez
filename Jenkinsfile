@@ -297,24 +297,48 @@ pipeline {
             }
         }
         // Automating Terraform Apply and Cleanup
-        stage('Apply and Cleanup') {
-            steps {
-                dir('Terraform/Dev') {
-                    script {
-                        // Apply the Terraform plan
-                        sh 'terraform apply tfplan'
+      stage('Apply and Cleanup') {
+    steps {
+        dir('Terraform/Dev') {
+            withCredentials([
+                string(credentialsId: 'DOCKERHUB_USERNAME', variable: 'DOCKERHUB_USERNAME'),
+                string(credentialsId: 'DOCKERHUB_PASSWORD', variable: 'DOCKERHUB_PASSWORD'),
+                string(credentialsId: 'RDS_PASSWORD', variable: 'RDS_PASSWORD'),
+                string(credentialsId: 'DJANGO_KEY', variable: 'DJANGO_KEY')
+            ]) {
+                script {
+                    // Apply the Terraform plan
+                    echo 'Applying Terraform plan...'
+                    sh '''
+                        terraform apply tfplan 
+                    '''
 
-                        // Wait for services to start
-                        echo 'Waiting 10 minutes for services to initialize...'
-                        sleep(time: 10, unit: 'MINUTES')
+                    // Wait for services to start
+                    echo 'Waiting 10 minutes for services to initialize...'
+                    sleep(time: 10, unit: 'MINUTES')
 
-                        // Cleanup resources
-                        echo 'Cleaning up Terraform infrastructure...'
-                        sh 'terraform destroy -auto-approve'
-                    }
+                    // Create a plan for destroy
+                    echo 'Creating Terraform destroy plan...'
+                    sh '''
+                        terraform plan -destroy -out=tfdestroyplan \
+                            -var="dockerhub_username=${DOCKERHUB_USERNAME}" \
+                            -var="dockerhub_password=${DOCKERHUB_PASSWORD}" \
+                            -var="db_password=${RDS_PASSWORD}" \
+                            -var="django_key=${DJANGO_KEY}"
+                    '''
+
+                    // Cleanup resources
+                    echo 'Cleaning up Terraform infrastructure...'
+                    sh '''
+                        terraform apply -auto-approve tfdestroyplan
+                    '''
                 }
             }
         }
+    }
+}
+
+
     } // Ensure this closing brace matches the 'stages' block
     post {
         success {
