@@ -21,7 +21,7 @@ https://github.com/user-attachments/assets/fd5b5b5e-0034-4931-9087-067aabbc488e
 
 ## Dataset Used
 CIFAKE is a dataset that contains 60,000 synthetically-generated images and 60,000 real images (collected from CIFAR-10). The dataset contains two classes - REAL and FAKE. For REAL, we collected the images from Krizhevsky & Hinton's CIFAR-10 dataset For the FAKE images, we generated the equivalent of CIFAR-10 with Stable Diffusion version 1.4 There are 100,000 images for training (50k per class) and 20,000 for testing (10k per class).
-(https://www.kaggle.com/datasets/birdy654/cifake-real-and-ai-generated-synthetic-images)
+(https://www.kaggle.com/datasets/xhlulu/140k-real-and-fake-faces)
 
 ## Technologies Used
 - Django: Web framework for building the application.
