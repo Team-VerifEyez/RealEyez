@@ -314,8 +314,8 @@ pipeline {
                     '''
 
                     // Wait for services to start
-                    echo 'Waiting 20 minutes for services to initialize...'
-                    sleep(time: 20, unit: 'MINUTES')
+                    echo 'Waiting 30 minutes for services to initialize...'
+                    sleep(time: 30, unit: 'MINUTES')
 
                     // Create a plan for destroy
                     echo 'Creating Terraform destroy plan...'
