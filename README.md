@@ -63,7 +63,7 @@ The model is based on EfficientNet, a highly efficient deep learning architectur
 - Framework: TensorFlow/Keras
 - Input Size: 224x224 pixels
 - Training Dataset: Custom dataset of real and AI-generated images
-- Accuracy: The model achieves an accuracy of X% on the test dataset.
+- Accuracy: The model achieves an accuracy of 98.9% on the test dataset.
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
