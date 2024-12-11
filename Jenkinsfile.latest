@@ -11,26 +11,6 @@ pipeline {
     }
 
     stages {
-        // SonarQube Analysis Stage to perform code quality and static analysis
-        stage('SonarQube Analysis') {
-            when { branch 'main' }
-            steps {
-                echo 'Running SonarQube analysis...'
-                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONARQUBE_TOKEN')]) {
-                    sh """
-                        export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-                        export PATH=\$JAVA_HOME/bin:\$PATH
-                        /opt/sonar-scanner/bin/sonar-scanner \
-                            -Dsonar.projectKey=${SONARQUBE_PROJECT_KEY} \
-                            -Dsonar.projectName=${SONARQUBE_PROJECT_NAME} \
-                            -Dsonar.sources=./detection,./RealVsAI \
-                            -Dsonar.host.url=${SONARQUBE_HOST_URL} \
-                            -Dsonar.login=${SONARQUBE_TOKEN}
-                    """
-                }
-            }
-        }
-        
         // Branch Validation Stage to ensure the pipeline runs only on the main branch
         stage('Check Branch') {
             when {
@@ -51,26 +31,31 @@ pipeline {
             '''
       }
     }
-
-       // Build and push an image of our latest application repository              
-       stage('Build & Push Images') {
+        
+        // SonarQube Analysis Stage to perform code quality and static analysis
+        stage('SonarQube Analysis') {
+            when { branch 'main' }
             steps {
-                dir('Terraform/Dev') {
-                    withCredentials([
-                        string(credentialsId: 'DOCKERHUB_USERNAME', variable: 'DOCKERHUB_USERNAME'),
-                        string(credentialsId: 'DOCKERHUB_PASSWORD', variable: 'DOCKERHUB_PASSWORD')
-                    ]) {
-                        sh '''
-                        echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
-                        
-                        # Build and push backend
-                        docker build -t joedhub/realeyez-app-2:latest -f Dockerfile.app .
-                        docker push joedhub/realeyez-app-2:latest
-                        '''
-                    }
+                echo 'Running SonarQube analysis...'
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONARQUBE_TOKEN')]) {
+                    sh """
+                        export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+                        export PATH=\$JAVA_HOME/bin:\$PATH
+                        /opt/sonar-scanner/bin/sonar-scanner \
+                            -Dsonar.projectKey=${SONARQUBE_PROJECT_KEY} \
+                            -Dsonar.projectName=${SONARQUBE_PROJECT_NAME} \
+                            -Dsonar.sources=./detection,./RealVsAI \
+                            -Dsonar.host.url=${SONARQUBE_HOST_URL} \
+                            -Dsonar.login=${SONARQUBE_TOKEN}
+                    """
                 }
             }
         }
+        
+
+        
+
+       
 
 
         // Pull Docker Image Stage to retrieve the latest application image
@@ -98,60 +83,7 @@ pipeline {
             }
         }
 
-        // Trivy Scan Stage to scan the application image for vulnerabilities
-        stage('Security Scan - Trivy') {
-            when { branch 'main' }
-            steps {
-                script {
-                    sh "mkdir -p ${REPORTS_DIR}"
-                    echo 'Running Trivy container scan for vulnerabilities...'
-                    
-                    sh """
-                        # Save detailed report to JSON file
-                        docker run --rm \
-                            -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v $HOME/.trivy:/root/.cache/trivy \
-                            aquasec/trivy:latest image \
-                            --format json \
-                            --debug \
-                            --quiet \
-                            --skip-update \
-                            --scanners vuln \
-                            --timeout 20m \
-                            --severity HIGH,CRITICAL \
-                            joedhub/owasp_realeyez:latest > ${REPORTS_DIR}/trivy_report.json
-                    """
-                    
-                    // Archive the detailed report
-                    archiveArtifacts artifacts: 'reports/trivy_report.json'
-                }
-            }
         
-            post {
-                failure {
-                    script {
-                        if (fileExists("${REPORTS_DIR}/trivy_report.json")) {
-                            def trivyReport = readJSON file: "${REPORTS_DIR}/trivy_report.json"
-                            def highSeverityIssues = trivyReport.findAll { 
-                                it.Severity in ['HIGH', 'CRITICAL']
-                            }
-
-                            if (highSeverityIssues) {
-                                echo "High-severity vulnerabilities detected:"
-                                highSeverityIssues.each { issue ->
-                                    echo "Vulnerability: ${issue.VulnerabilityID} | Severity: ${issue.Severity} | Package: ${issue.PkgName}"
-                                }
-                                error "Trivy scan found high-severity vulnerabilities."
-                            } else {
-                                echo "No high-severity vulnerabilities found in Trivy scan."
-                            }
-                        } else {
-                            error "Trivy scan report not found."
-                        }
-                    }
-                }
-            }
-        }
 
         // Docker Container Run Stage to start the application container
         stage('Run Docker Container') {
@@ -216,6 +148,81 @@ pipeline {
                     docker stop owasp_realeyez || true
                     docker system prune -f || true
                 '''
+            }
+        }
+
+        // Build and push an image of our latest application repository              
+       stage('Build & Push Images') {
+            steps {
+                dir('Terraform/Dev') {
+                    withCredentials([
+                        string(credentialsId: 'DOCKERHUB_USERNAME', variable: 'DOCKERHUB_USERNAME'),
+                        string(credentialsId: 'DOCKERHUB_PASSWORD', variable: 'DOCKERHUB_PASSWORD')
+                    ]) {
+                        sh '''
+                        echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
+                        
+                        # Build and push backend
+                        docker build -t joedhub/realeyez-app-2:latest -f Dockerfile.app .
+                        docker push joedhub/realeyez-app-2:latest
+                        '''
+                    }
+                }
+            }
+        }
+
+        // Trivy Scan Stage to scan the application image for vulnerabilities
+        stage('Security Scan - Trivy') {
+            when { branch 'main' }
+            steps {
+                script {
+                    sh "mkdir -p ${REPORTS_DIR}"
+                    echo 'Running Trivy container scan for vulnerabilities...'
+                    
+                    sh """
+                        # Save detailed report to JSON file
+                        docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v $HOME/.trivy:/root/.cache/trivy \
+                            aquasec/trivy:latest image \
+                            --format json \
+                            --debug \
+                            --quiet \
+                            --skip-update \
+                            --scanners vuln \
+                            --timeout 20m \
+                            --severity HIGH,CRITICAL \
+                            joedhub/realeyez-app-2:latest > ${REPORTS_DIR}/trivy_report.json
+                    """
+                    
+                    // Archive the detailed report
+                    archiveArtifacts artifacts: 'reports/trivy_report.json'
+                }
+            }
+        
+            post {
+                failure {
+                    script {
+                        if (fileExists("${REPORTS_DIR}/trivy_report.json")) {
+                            def trivyReport = readJSON file: "${REPORTS_DIR}/trivy_report.json"
+                            def highSeverityIssues = trivyReport.findAll { 
+                                it.Severity in ['HIGH', 'CRITICAL']
+                            }
+
+                            if (highSeverityIssues) {
+                                echo "High-severity vulnerabilities detected:"
+                                highSeverityIssues.each { issue ->
+                                    echo "Vulnerability: ${issue.VulnerabilityID} | Severity: ${issue.Severity} | Package: ${issue.PkgName}"
+                                }
+                                error "Trivy scan found high-severity vulnerabilities."
+                            } else {
+                                echo "No high-severity vulnerabilities found in Trivy scan."
+                            }
+                        } else {
+                            error "Trivy scan report not found."
+                        }
+                    }
+                }
             }
         }
 
@@ -317,6 +324,48 @@ pipeline {
                 '''
             }
         }
+
+        // Automating Terraform Apply and Cleanup
+      stage('Apply and Cleanup') {
+    steps {
+        dir('Terraform/Dev') {
+            withCredentials([
+                string(credentialsId: 'DOCKERHUB_USERNAME', variable: 'DOCKERHUB_USERNAME'),
+                string(credentialsId: 'DOCKERHUB_PASSWORD', variable: 'DOCKERHUB_PASSWORD'),
+                string(credentialsId: 'RDS_PASSWORD', variable: 'RDS_PASSWORD'),
+                string(credentialsId: 'DJANGO_KEY', variable: 'DJANGO_KEY')
+            ]) {
+                script {
+                    // Apply the Terraform plan
+                    echo 'Applying Terraform plan...'
+                    sh '''
+                        terraform apply tfplan 
+                    '''
+
+                    // Wait for services to start
+                    echo 'Waiting 30 minutes for services to initialize...'
+                    sleep(time: 30, unit: 'MINUTES')
+
+                    // Create a plan for destroy
+                    echo 'Creating Terraform destroy plan...'
+                    sh '''
+                        terraform plan -destroy -out=tfdestroyplan \
+                            -var="dockerhub_username=${DOCKERHUB_USERNAME}" \
+                            -var="dockerhub_password=${DOCKERHUB_PASSWORD}" \
+                            -var="db_password=${RDS_PASSWORD}" \
+                            -var="django_key=${DJANGO_KEY}"
+                    '''
+
+                    // Cleanup resources
+                    echo 'Cleaning up Terraform infrastructure...'
+                    sh '''
+                        terraform apply -auto-approve tfdestroyplan
+                    '''
+                }
+            }
+        }
+    }
+}
     }
     post {
         success {
