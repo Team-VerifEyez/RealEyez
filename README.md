@@ -1,3 +1,7 @@
+# Introduction
+
+This documentation provides a comprehensive guide for deploying RealEyez, a Django-based application that detects whether images are real or AI-generated. The deployment process leverages Terraform for modular infrastructure automation, Docker for containerization, and Jenkins for CI/CD pipeline management. The pipeline integrates multiple security tools, such as OWASP Scan, SonarQube, and Checkov, to enhance application and infrastructure integrity. This documentation also details the process used for AI model training as well as how to dynamically set up monitoring with Grafana and Prometheus. By following these instructions, users will be able to set up a scalable and efficient deployment of RealEyez.
+
 # RealEyez 
 RealEyez is a machine learning-based project designed to detect whether an image is real or AI-generated. This web application utilizes a Convolutional Neural Network (CNN) model based on EfficientNet to classify images. The project is built using Django for the web framework and integrates an AI model that analyzes images and predicts their authenticity.
 
@@ -66,3 +70,34 @@ The model is based on EfficientNet, a highly efficient deep learning architectur
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Instructions
+In your default VPC, create two EC2s:
+
+1. Jenkins Manager Instance (t3.micro)
+
+    - This EC2 will represent your Jenkins Manager instance. While launching, create and save a new key pair.
+    - Install Jenkins & Java 17
+    - Security Group Ports: 22 (SSH), 8080 (Jenkins)
+
+
+2. Jenkins Node Instance (t3.medium)
+
+    -   This EC2 will represent your Jenkins Node instance. While launching, use the same key pair as your Jenkins Manager Instance.
+    - Depending on your pipeline, you may need to add additional volume to this EC2 past the free tier AWS offers (at 30 GB.) For this project, our team decided on a total of 70GB. You can configure the volume of your EC2 in the 'Launch Instance' view in AWS or if you've already created it, select your instance > click the "Storage" tab > Click on the Volume ID > Select the Voume ID again on the next page > Click on the "Actions" drop-down menu and select "Attach Volume".
+
+Create a t3.medium EC2 called "Docker_Terraform" to represent your Jenkins Node instance. Use the same key pair as Jenkins EC2.
+- Java 17
+- Docker
+- Terraform
+
+Security Tools (Optional):
+- OWASP Zap
+- Checkov
+- Trivy
+- SonarQube (requires an additional EC2 to act as a SonarQube Server)
+
+To provision your infrastructure, use Terraform to create your resources and the user_data section to install Docker on your instances in your VPC of choice. From there, you're able to pull the Docker image of this application onto your EC2.  
+
+# Conclusion
+The RealEyez deployment exemplifies a secure, efficient, and scalable solution for AI-driven image analysis. By leveraging Terraform for dynamic infrastructure provisioning, Docker for application containerization, and Jenkins for seamless automation, this guide demonstrates how to achieve scalable deployments with high reliability. Moreover, robust security practices and dynamic monitoring further enhance the system's operational integrity. Whether you are a developer, DevOps engineer, or a tech enthusiast, this guide equips you with the knowledge to deploy and maintain this innovative application successfully.
