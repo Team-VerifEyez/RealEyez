@@ -34,7 +34,7 @@ The 140k Real and Fake Faces dataset consists of all 70k REAL faces from the Fli
 - Bootstrap: Frontend framework for responsive and modern design.
 - HTML/CSS/JavaScript: Used for frontend development and interactivity.
 - SQLite: Default database used by Django for storing minimal data.\
-## Setup and Installation
+## Local Setup and Installation
 1. Clone the repository:
     ```bash
     git clone https://github.com/Team-VerifEyez/RealEyez.git
