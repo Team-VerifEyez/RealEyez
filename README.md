@@ -97,7 +97,10 @@ Security Tools (Optional):
 - Trivy
 - SonarQube (requires an additional EC2 to act as a SonarQube Server)
 
-To provision your infrastructure, use Terraform to create your resources and the user_data section to install Docker on your instances in your VPC of choice. From there, you're able to pull the Docker image of this application onto your EC2.  
+To provision your infrastructure, use Terraform to create your resources - You may reference the below system diagram to understand what sort of infrastructure you want to build. In your Terraform main.tf file(s), use the user_data section to install Docker on your instances in your VPC of choice. From there, you're able to pull the Docker image of this application onto your EC2.  
+
+## System Diagram
+![image](https://github.com/user-attachments/assets/a3d1b110-0d5a-426c-afd4-64caf3afec96)
 
 # Conclusion
 The RealEyez deployment exemplifies a secure, efficient, and scalable solution for AI-driven image analysis. By leveraging Terraform for dynamic infrastructure provisioning, Docker for application containerization, and Jenkins for seamless automation, this guide demonstrates how to achieve scalable deployments with high reliability. Moreover, robust security practices and dynamic monitoring further enhance the system's operational integrity. Whether you are a developer, DevOps engineer, or a tech enthusiast, this guide equips you with the knowledge to deploy and maintain this innovative application successfully.
