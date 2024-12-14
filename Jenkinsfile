@@ -313,25 +313,25 @@ pipeline {
                         terraform apply tfplan 
                     '''
 
-                    // Wait for services to start
-                    echo 'Waiting 30 minutes for services to initialize...'
-                    sleep(time: 30, unit: 'MINUTES')
+                    // // Wait for services to start
+                    // echo 'Waiting 30 minutes for services to initialize...'
+                    // sleep(time: 30, unit: 'MINUTES')
 
-                    // Create a plan for destroy
-                    echo 'Creating Terraform destroy plan...'
-                    sh '''
-                        terraform plan -destroy -out=tfdestroyplan \
-                            -var="dockerhub_username=${DOCKERHUB_USERNAME}" \
-                            -var="dockerhub_password=${DOCKERHUB_PASSWORD}" \
-                            -var="db_password=${RDS_PASSWORD}" \
-                            -var="django_key=${DJANGO_KEY}"
-                    '''
+                    // // Create a plan for destroy
+                    // echo 'Creating Terraform destroy plan...'
+                    // sh '''
+                    //     terraform plan -destroy -out=tfdestroyplan \
+                    //         -var="dockerhub_username=${DOCKERHUB_USERNAME}" \
+                    //         -var="dockerhub_password=${DOCKERHUB_PASSWORD}" \
+                    //         -var="db_password=${RDS_PASSWORD}" \
+                    //         -var="django_key=${DJANGO_KEY}"
+                    // '''
 
-                    // Cleanup resources
-                    echo 'Cleaning up Terraform infrastructure...'
-                    sh '''
-                        terraform apply -auto-approve tfdestroyplan
-                    '''
+                    // // Cleanup resources
+                    // echo 'Cleaning up Terraform infrastructure...'
+                    // sh '''
+                    //     terraform apply -auto-approve tfdestroyplan
+                    // '''
                 }
             }
         }
